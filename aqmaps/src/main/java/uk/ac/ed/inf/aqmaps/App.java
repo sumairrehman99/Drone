@@ -79,7 +79,6 @@ public class App
         
 
         
-        
         var sensorDetails = new ArrayList<Sensor>();
         
         

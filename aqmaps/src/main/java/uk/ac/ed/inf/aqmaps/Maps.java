@@ -1,5 +1,6 @@
 package uk.ac.ed.inf.aqmaps;
 
+
 public class Maps {
 	public String location;
 	public double battery;

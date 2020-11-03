@@ -27,7 +27,6 @@ public class Sensor {
 		return battery;
 	}
 	
-	
-	
+
 	
 }

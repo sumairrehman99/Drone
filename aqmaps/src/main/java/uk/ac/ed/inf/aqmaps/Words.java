@@ -1,8 +1,5 @@
 package uk.ac.ed.inf.aqmaps;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import uk.ac.ed.inf.aqmaps.Words.Square.Northeast;
 import uk.ac.ed.inf.aqmaps.Words.Square.Southwest;
 
