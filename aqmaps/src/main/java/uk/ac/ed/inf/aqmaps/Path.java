@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import com.mapbox.turf.TurfJoins;
+import com.mapbox.turf.*;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Geometry;
@@ -26,7 +27,10 @@ public class Path {
 	private static HashMap<String, Polygon> noFlyMap;
 	private static List<Polygon> no_fly_polygons;
 	private static final HttpClient client = HttpClient.newHttpClient();
-	
+	private static Polygon appleton;
+	private static Polygon dht;
+	private static Polygon library;
+	private static Polygon forum;
 	
     
     
@@ -41,6 +45,31 @@ public class Path {
 		this.move_counter = move_counter;
 		this.path = path;
 		
+		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
+        var no_fly_response = client.send(no_fly_request, BodyHandlers.ofString());
+        
+        FeatureCollection no_fly_collection = FeatureCollection.fromJson(no_fly_response.body());        
+        List<Feature> no_fly_list = no_fly_collection.features();
+        List<Geometry> no_fly_geometrys = new ArrayList<>();
+        
+        for (Feature f : no_fly_list) {
+        	no_fly_geometrys.add(f.geometry());
+        }
+        
+        var no_fly_polygons = new ArrayList<Polygon>();
+        
+        for (Geometry g : no_fly_geometrys) {
+        	if (g instanceof Polygon) {
+        		no_fly_polygons.add((Polygon)g);
+        	}
+        }
+        
+        
+        
+         appleton = no_fly_polygons.get(0);
+         dht = no_fly_polygons.get(1);
+         library = no_fly_polygons.get(2);
+         forum = no_fly_polygons.get(3);
 	   
 	}
 	
@@ -54,46 +83,48 @@ public class Path {
 	
 	public static void buildPath() {
 		
-		
-		 	
-
 		// flying to the sensors
-		while (visitedSensors.size() < 33 || move_counter < 150) {
-			Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visitedSensors);
-			double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
-			Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
-			new_point = checkBoundary(new_point, dronePosition(path));
-			
-			
-			
-			
-			
-			path.add(new_point);
+				while (visitedSensors.size() < 33 || move_counter < 150) {
+					Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visitedSensors);
+					if (inRange(next_sensor, dronePosition(path))) {
+						visitedSensors.add(next_sensor);
+					}
+					double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
+					Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
+					new_point = checkBoundary(new_point, dronePosition(path));
+					
+	
+					
+					path.add(new_point);
 
-			if (inRange(dronePosition(path), next_sensor)){
-				visitedSensors.add(next_sensor);
-			}
-			move_counter++;
-			
-			if (move_counter == 150 || visitedSensors.size() == 33) {
-				break;
-			}
-		}
+					if (inRange(dronePosition(path), next_sensor)){
+						visitedSensors.add(next_sensor);
+						move_counter++;
+					}
+					else {
+						move_counter++;
+					}
+					if (move_counter == 150 || visitedSensors.size() == 33) {
+						break;
+					}
+				}
+				
+				// returning to the starting position
+				while (move_counter < 150) {
+			    	   Point start = path.get(0);
+			    	   double angle = findAngle(dronePosition(path), start, sensorDirection(dronePosition(path), start));
+			    	   Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
+			    	   
+			    	   
+			    	   if (inRange(dronePosition(path), start)) {
+			    		   break;
+			    	   }
+			    	   
+			    	   path.add(new_point);
+			    	   move_counter++;
+			       }
 		
-		// returning to the starting position
-		while (move_counter < 150) {
-	    	   Point start = path.get(0);
-	    	   double angle = findAngle(dronePosition(path), start, sensorDirection(dronePosition(path), start));
-	    	   Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
-	    	   
-	    	   
-	    	   if (inRange(dronePosition(path), start)) {
-	    		   break;
-	    	   }
-	    	   
-	    	   path.add(new_point);
-	    	   move_counter++;
-	       }
+				
 		
 	}
 	
@@ -199,7 +230,7 @@ public class Path {
     	double basic_angle = 0;
     	double angle = 0;
     	
-    	basic_angle = nearestTen(Math.toDegrees(Math.atan(lng_difference / lat_difference)));
+    	basic_angle = nearestTen(Math.toDegrees(Math.atan(lat_difference / lng_difference)));
     	
     	
     	
@@ -253,27 +284,31 @@ public class Path {
   		  new_point = Point.fromLngLat(drone.longitude() + lngDifference(0), drone.latitude() + latDifference(0));
 	   }
 	   
+	   // if the drone is about to cross the left boundary
+	   if (new_point.longitude() <= -3.192473) {
+		   new_point = Point.fromLngLat(drone.longitude() + lngDifference(90), drone.latitude() + latDifference(90));
+	   }
+	   
 	   return new_point;
 	   
    }
     
     
-    private static String flightDirection(Point drone, Point new_point) {
+    private static String flightDirection(List<Point> path, Point new_point) {
     	String direction = "";
     	
-    	if (drone.latitude() >= new_point.latitude() && drone.longitude() >= new_point.latitude()) {
+    	if (dronePosition(path).latitude() >= new_point.latitude() && dronePosition(path).longitude() >= new_point.longitude()) {
     		direction = "south-west";
     	}
-    	if (drone.latitude() >= new_point.latitude() && drone.longitude() <= new_point.longitude()) {
+    	if (dronePosition(path).latitude() >= new_point.latitude() && dronePosition(path).longitude() <= new_point.longitude()) {
     		direction = "south-east";
     	}
-    	if (drone.latitude() <= new_point.latitude() && drone.longitude() >= new_point.longitude()) {
+    	if (dronePosition(path).latitude() <= new_point.latitude() && dronePosition(path).longitude() >= new_point.longitude()) {
     		direction = "north-west";
     	}
-    	if (drone.latitude() <= new_point.latitude() && drone.longitude() <= new_point.longitude()) {
+    	if (dronePosition(path).latitude() <= new_point.latitude() && dronePosition(path).longitude() <= new_point.longitude()) {
     		direction = "north-east";
     	}
-    	
     	return direction;
     }
     
@@ -281,6 +316,10 @@ public class Path {
     
     public static int getMoves() {
     	return move_counter;
+    }
+    
+    public static int getSensors() {
+    	return visitedSensors.size();
     }
     
     // rounds to 6 decimal places

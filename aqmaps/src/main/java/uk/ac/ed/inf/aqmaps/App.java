@@ -35,7 +35,6 @@ public class App
 	private static int moveCounter = 0;
 	private static ArrayList<Point> visitedSensors = new ArrayList<Point>();
 	private static ArrayList<Point> path = new ArrayList<Point>();
-	private static HashMap<String, Polygon> noFlyMap = new HashMap<>();
 	
 	
     public static void main( String[] args ) throws IOException, InterruptedException
@@ -54,33 +53,30 @@ public class App
         var maps_response = client.send(maps_request, BodyHandlers.ofString());
            
         
-        var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
-        var no_fly_response = client.send(no_fly_request, BodyHandlers.ofString());
         
-        FeatureCollection no_fly_collection = FeatureCollection.fromJson(no_fly_response.body());        
-        List<Feature> no_fly_list = no_fly_collection.features();
-        List<Geometry> no_fly_geometrys = new ArrayList<>();
+//        var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
+//        var no_fly_response = client.send(no_fly_request, BodyHandlers.ofString());
+//        
+//        FeatureCollection no_fly_collection = FeatureCollection.fromJson(no_fly_response.body());        
+//        List<Feature> no_fly_list = no_fly_collection.features();
+//        List<Geometry> no_fly_geometrys = new ArrayList<>();
+//        
+//        for (Feature f : no_fly_list) {
+//        	no_fly_geometrys.add(f.geometry());
+//        }
+//        
+//        var no_fly_polygons = new ArrayList<Polygon>();
+//        
+//        for (Geometry g : no_fly_geometrys) {
+//        	if (g instanceof Polygon) {
+//        		no_fly_polygons.add((Polygon)g);
+//        	}
+//        }
+//        
+//        
+//        
+//        System.out.println(no_fly_polygons.get(2).);
         
-        for (Feature f : no_fly_list) {
-        	no_fly_geometrys.add(f.geometry());
-        }
-        
-        var no_fly_polygons = new ArrayList<Polygon>();
-        
-        for (Geometry g : no_fly_geometrys) {
-        	if (g instanceof Polygon) {
-        		no_fly_polygons.add((Polygon)g);
-        	}
-        }
-
-        
-        
-        noFlyMap.put("appleton", no_fly_polygons.get(0));
-	    noFlyMap.put("dht", no_fly_polygons.get(1));
-	    noFlyMap.put("library", no_fly_polygons.get(2));
-	    noFlyMap.put("forum", no_fly_polygons.get(3));
-       
-        System.out.println(noFlyMap.get("library"));
         
         
         
@@ -194,13 +190,11 @@ public class App
         route.buildPath();
        
         
-       	
-        
         
         
        	
         System.out.println(route.getMoves());
-        System.out.println(visitedSensors.size());
+        System.out.println(route.getSensors());
         
         
         LineString flight_path = LineString.fromLngLats(path);
