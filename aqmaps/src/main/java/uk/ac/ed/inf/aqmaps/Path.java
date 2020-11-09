@@ -19,10 +19,10 @@ import com.mapbox.geojson.Polygon;
 
 public class Path {
 
-	private static List<Point> sensor_positions;
-	private Point drone;
+	private static  List<Point> sensor_positions;
+	private Point droneLocation;
 	private static List<Point> visitedSensors;
-	private static int move_counter;
+	private static int move_counter = 0;
 	private static List<Point> path; 
 	private static HashMap<String, Polygon> noFlyMap;
 	private static List<Polygon> no_fly_polygons;
@@ -38,12 +38,11 @@ public class Path {
 
 
 	
-	public Path(List<Point> sensor_positions, Point drone, List<Point> visitedSensors, List<Point> path, int move_counter) throws IOException, InterruptedException {
-		this.sensor_positions = sensor_positions;
-		this.drone = drone;
-		this.visitedSensors = visitedSensors;
-		this.move_counter = move_counter;
-		this.path = path;
+	public Path(List<Point> sensor_positions, Point droneLocation, List<Point> visitedSensors, List<Point> path) throws IOException, InterruptedException {
+		Path.sensor_positions = sensor_positions;
+		this.droneLocation = droneLocation;
+		Path.visitedSensors = visitedSensors;
+		Path.path = path;
 		
 		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
         var no_fly_response = client.send(no_fly_request, BodyHandlers.ofString());
@@ -75,10 +74,6 @@ public class Path {
 	
 	
 	
-		
-	
-	
-	
 	
 	
 	public static void buildPath() {
@@ -92,6 +87,8 @@ public class Path {
 					double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
 					Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
 					new_point = checkBoundary(new_point, dronePosition(path));
+					
+				
 					
 	
 					
@@ -115,6 +112,8 @@ public class Path {
 			    	   double angle = findAngle(dronePosition(path), start, sensorDirection(dronePosition(path), start));
 			    	   Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
 			    	   
+			    	   
+			    	
 			    	   
 			    	   if (inRange(dronePosition(path), start)) {
 			    		   break;
@@ -276,7 +275,7 @@ public class Path {
 	   
 	   // if the drone is about to cross the bottom boundary
 	   if (new_point.latitude() <= 55.942617) {
- 		  new_point = Point.fromLngLat(drone.longitude() + lngDifference(180), drone.latitude() + latDifference(180));
+		   new_point = Point.fromLngLat(drone.longitude() + lngDifference(0), drone.latitude() + latDifference(0));
 	   }
 	   
 	   // if the drone is about the top boundary
@@ -294,6 +293,7 @@ public class Path {
    }
     
     
+    // gives the direction the drone is flying
     private static String flightDirection(List<Point> path, Point new_point) {
     	String direction = "";
     	
