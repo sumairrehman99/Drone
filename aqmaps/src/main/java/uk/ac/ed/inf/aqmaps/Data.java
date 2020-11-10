@@ -19,7 +19,10 @@ public class Data {
 	private String month;
 	private String year;
 	private ArrayList<Maps> data_list;			 // this list stores the location, reading and battery percentage of each sensor
-
+	private ArrayList<Sensor> sensorDetails;	 // this list stores the sensors as objects
+	private ArrayList<HttpResponse<String>> detailsList;
+	private ArrayList<String[]> splitLocations;
+	
 	public Data(String day, String month, String year) throws IOException, InterruptedException {
 		this.day = day;
 		this.month = month;
@@ -32,16 +35,21 @@ public class Data {
         
        
         data_list = new Gson().fromJson(data_response.body(), mapsType);
+        
+        sensorDetails = new ArrayList<Sensor>();
+        
+        for (int i = 0; i < data_list.size(); i++) {
+        	sensorDetails.add(new Sensor(data_list.get(i).location, data_list.get(i).reading, data_list.get(i).battery));
+        }
+        
+       
+        
 	}
 	
 	
-	public ArrayList<Maps> getDataList(){
-		return data_list;
+	public ArrayList<Sensor> getSensors(){
+		return sensorDetails;
 	}
-	
-	
-	
-	
 	
 	
 	

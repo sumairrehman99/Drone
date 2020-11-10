@@ -65,15 +65,8 @@ public class App
         
         
         Data data = new Data(day, month, year);
-        var data_list = data.getDataList();
         
-        var sensorDetails = new ArrayList<Sensor>();
-       
-        for (int i = 0; i < data_list.size(); i++) {
-        	sensorDetails.add(new Sensor(data_list.get(i).location, data_list.get(i).reading, data_list.get(i).battery));
-        }
-        
-        
+        var sensorDetails = data.getSensors();        
         
         var readings = new ArrayList<Double>();
         
@@ -91,16 +84,18 @@ public class App
         }
     
         
-      // this list stores the responses to the word request from the web server
-      var words_response_list = new ArrayList<HttpResponse<String>>();
+//    this list stores the responses to the word request from the web server
+      var detailsList = new ArrayList<HttpResponse<String>>();
       
       for (int i = 0; i < splitLocations.size(); i++) {
-      	var words_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + splitLocations.get(i)[0] + "/" + splitLocations.get(i)[1] + "/" + splitLocations.get(i)[2] + "/details.json")).build();
-      	words_response_list.add(client.send(words_request, BodyHandlers.ofString()));
+      	var detailsRequest = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + splitLocations.get(i)[0] + "/" + splitLocations.get(i)[1] + "/" + splitLocations.get(i)[2] + "/details.json")).build();
+      	detailsList.add(client.send(detailsRequest, BodyHandlers.ofString()));
       }
         
 
-       
+      
+        
+        
         // plotting the sensors on the map
         
         var positions_list = new ArrayList<Position>();		// stores the positions of all the sensors 
@@ -112,8 +107,8 @@ public class App
        
         
         
-        for (int i = 0; i < words_response_list.size(); i++){
-        	var words = new Gson().fromJson(words_response_list.get(i).body(), Words.class);
+        for (int i = 0; i < detailsList.size(); i++){
+        	var words = new Gson().fromJson(detailsList.get(i).body(), Words.class);
         	positions_list.add(new Position(words.coordinates.lng, words.coordinates.lat));
         }
         
