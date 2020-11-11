@@ -11,22 +11,17 @@ import java.util.ArrayList;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.mapbox.geojson.Feature;
 
 public class Data {
 
 	private static final HttpClient client = HttpClient.newHttpClient();
-	private String day;
-	private String month;
-	private String year;
 	private ArrayList<Maps> data_list;			 // this list stores the location, reading and battery percentage of each sensor
 	private ArrayList<Sensor> sensorDetails;	 // this list stores the sensors as objects
 	private ArrayList<HttpResponse<String>> detailsList;
 	private ArrayList<String[]> splitLocations;
 	
 	public Data(String day, String month, String year) throws IOException, InterruptedException {
-		this.day = day;
-		this.month = month;
-		this.year = year;
 		
 		var data_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/maps/" + year + "/" + month + "/" + day + "/air-quality-data.json")).build();
         var data_response = client.send(data_request, BodyHandlers.ofString());
@@ -42,19 +37,36 @@ public class Data {
         	sensorDetails.add(new Sensor(data_list.get(i).location, data_list.get(i).reading, data_list.get(i).battery));
         }
         
-       
         
 	}
+	
 	
 	
 	public ArrayList<Sensor> getSensors(){
 		return sensorDetails;
 	}
 	
+	public ArrayList<Double> getSensorReadings(ArrayList<Sensor> sensors){
+		ArrayList<Double> readings  = new ArrayList<>();
+		for (int i = 0; i < sensors.size(); i++) {
+        	readings.add(sensors.get(i).parseReadings(sensors.get(i).getReading()));
+        }
+		return readings;
+	}
 	
 	
-	
+	// drawing the sensors on the map
+    public void drawSensors(ArrayList<Double> readings, ArrayList<Sensor> sensors, ArrayList<Feature> f) {
+    	for (int i = 0; i < sensors.size(); i++) {
+    		sensors.get(i);
+    		Sensor.drawSensors(readings.get(i), sensorDetails.get(i).getBattery(), sensorDetails.get(i).getLocation(), f.get(i));
+    	}
+    }
 	
 	
 	
 }
+	
+	
+	
+

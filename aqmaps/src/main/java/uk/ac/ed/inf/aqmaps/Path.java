@@ -79,50 +79,50 @@ public class Path {
 	public static void buildPath() {
 		
 		// flying to the sensors
-				while (visitedSensors.size() < 33 || move_counter < 150) {
-					Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visitedSensors);
-					if (inRange(next_sensor, dronePosition(path))) {
-						visitedSensors.add(next_sensor);
-					}
-					double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
-					Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
-					new_point = checkBoundary(new_point, dronePosition(path));
-					
-				
-					
-	
-					
-					path.add(new_point);
-
-					if (inRange(dronePosition(path), next_sensor)){
-						visitedSensors.add(next_sensor);
-						move_counter++;
-					}
-					else {
-						move_counter++;
-					}
-					if (move_counter == 150 || visitedSensors.size() == 33) {
-						break;
-					}
-				}
-				
-				// returning to the starting position
-				while (move_counter < 150) {
-			    	   Point start = path.get(0);
-			    	   double angle = findAngle(dronePosition(path), start, sensorDirection(dronePosition(path), start));
-			    	   Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
-			    	   
-			    	   
-			    	
-			    	   
-			    	   if (inRange(dronePosition(path), start)) {
-			    		   break;
-			    	   }
-			    	   
-			    	   path.add(new_point);
-			    	   move_counter++;
-			       }
+		while (visitedSensors.size() < 33 || move_counter < 150) {
+			Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visitedSensors);
+			if (inRange(next_sensor, dronePosition(path))) {
+				visitedSensors.add(next_sensor);
+			}
+			double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
+			Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
+			new_point = checkBoundary(new_point, dronePosition(path));
+			
 		
+			
+
+			
+			path.add(new_point);
+
+			if (inRange(dronePosition(path), next_sensor)){
+				visitedSensors.add(next_sensor);
+				move_counter++;
+			}
+			else {
+				move_counter++;
+			}
+			if (move_counter == 150 || visitedSensors.size() == 33) {
+				break;
+			}
+		}
+		
+		// returning to the starting position
+		while (move_counter < 150) {
+	    	   Point start = path.get(0);
+	    	   double angle = findAngle(dronePosition(path), start, sensorDirection(dronePosition(path), start));
+	    	   Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
+	    	   
+	    	   
+	    	
+	    	   
+	    	   if (getDistance(start, dronePosition(path)) < 0.0003) {
+	    		   break;
+	    	   }
+	    	   
+	    	   path.add(new_point);
+	    	   move_counter++;
+	       }
+
 				
 		
 	}

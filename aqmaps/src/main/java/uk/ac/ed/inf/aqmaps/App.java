@@ -19,7 +19,7 @@ import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
-import com.mapbox.turf.TurfJoins;
+
 
 
 
@@ -30,7 +30,8 @@ public class App
 	private static final HttpClient client = HttpClient.newHttpClient();
 	private static ArrayList<Point> visitedSensors = new ArrayList<Point>();
 	private static ArrayList<Point> path = new ArrayList<Point>();
-	
+	private static ArrayList<Geometry> geometry_list = new ArrayList<>();
+    private static ArrayList<Feature> featureList = new ArrayList<>();
 	
     public static void main( String[] args ) throws IOException, InterruptedException
     {
@@ -40,9 +41,7 @@ public class App
         var year = args[2];
         var starting_latitude = Double.parseDouble(args[3]);
         var starting_longitude = Double.parseDouble(args[4]);
-        var seed = args[5];
-        var port = args[6];
-        
+       
 
        
            
@@ -68,14 +67,12 @@ public class App
         
         var sensorDetails = data.getSensors();        
         
-        var readings = new ArrayList<Double>();
-        
-        // parsing the sensor readings and storing them as doubles in the readings list
-        for (int i = 0; i < sensorDetails.size(); i++) {
-        	readings.add(sensorDetails.get(i).parseReadings(sensorDetails.get(i).getReading()));
-        }
+        var readings = data.getSensorReadings(sensorDetails);
         
         var splitLocations = new ArrayList<String[]>();
+        
+        
+        
         
         
         // splitting the locations at "."
@@ -87,21 +84,20 @@ public class App
 //    this list stores the responses to the word request from the web server
       var detailsList = new ArrayList<HttpResponse<String>>();
       
-      for (int i = 0; i < splitLocations.size(); i++) {
-      	var detailsRequest = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + splitLocations.get(i)[0] + "/" + splitLocations.get(i)[1] + "/" + splitLocations.get(i)[2] + "/details.json")).build();
-      	detailsList.add(client.send(detailsRequest, BodyHandlers.ofString()));
-      }
-        
-
       
+      // pulling the details from the web server
+      for (int i = 0; i < splitLocations.size(); i++) {
+    	  var detailsRequest = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + splitLocations.get(i)[0] + "/" + splitLocations.get(i)[1] + "/" + splitLocations.get(i)[2] + "/details.json")).build();
+    	  detailsList.add(client.send(detailsRequest, BodyHandlers.ofString()));
+      }
+      	
         
         
         // plotting the sensors on the map
         
-        var positions_list = new ArrayList<Position>();		// stores the positions of all the sensors 
-        var sensor_positions = new ArrayList<Point>();		
-        var geometry_list = new ArrayList<Geometry>();
-        var featureList = new ArrayList<Feature>();
+        var coordinates_list = new ArrayList<Coordinates>();	// stores the coordinates of all the sensors 
+        var sensor_positions = new ArrayList<Point>();			
+        
         
         
        
@@ -109,11 +105,11 @@ public class App
         
         for (int i = 0; i < detailsList.size(); i++){
         	var words = new Gson().fromJson(detailsList.get(i).body(), Words.class);
-        	positions_list.add(new Position(words.coordinates.lng, words.coordinates.lat));
+        	coordinates_list.add(new Coordinates(words.coordinates.lng, words.coordinates.lat));
         }
         
-        for (int p = 0; p < positions_list.size(); p++) {
-        	sensor_positions.add(Point.fromLngLat(positions_list.get(p).getLongitude(), positions_list.get(p).getLatitude()));
+        for (int p = 0; p < coordinates_list.size(); p++) {
+        	sensor_positions.add(Point.fromLngLat(coordinates_list.get(p).getLongitude(), coordinates_list.get(p).getLatitude()));
         }
         
         
@@ -152,16 +148,9 @@ public class App
         }
         
         
-     // drawing the sensors on the map
-        for (int i = 0; i < 33; i++) {
-        	featureList.get(i).addStringProperty("location", sensorDetails.get(i).getLocation());
-        	sensorDetails.get(i);
-			Sensor.drawSensors(readings.get(i), sensorDetails.get(i).getBattery(), featureList.get(i));
-        }
+        data.drawSensors(readings, sensorDetails, featureList);
         
-
-        
-
+    
       
         FeatureCollection collection = FeatureCollection.fromFeatures(featureList);
         
