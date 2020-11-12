@@ -1,6 +1,8 @@
 package uk.ac.ed.inf.aqmaps;
 
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -44,32 +46,7 @@ public class Path {
 		Path.visitedSensors = visitedSensors;
 		Path.path = path;
 		
-		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
-        var no_fly_response = client.send(no_fly_request, BodyHandlers.ofString());
-        
-        FeatureCollection no_fly_collection = FeatureCollection.fromJson(no_fly_response.body());        
-        List<Feature> no_fly_list = no_fly_collection.features();
-        List<Geometry> no_fly_geometrys = new ArrayList<>();
-        
-        for (Feature f : no_fly_list) {
-        	no_fly_geometrys.add(f.geometry());
-        }
-        
-        var no_fly_polygons = new ArrayList<Polygon>();
-        
-        for (Geometry g : no_fly_geometrys) {
-        	if (g instanceof Polygon) {
-        		no_fly_polygons.add((Polygon)g);
-        	}
-        }
-        
-        
-        
-         appleton = no_fly_polygons.get(0);
-         dht = no_fly_polygons.get(1);
-         library = no_fly_polygons.get(2);
-         forum = no_fly_polygons.get(3);
-	   
+		
 	}
 	
 	
@@ -83,6 +60,7 @@ public class Path {
 			Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visitedSensors);
 			if (inRange(next_sensor, dronePosition(path))) {
 				visitedSensors.add(next_sensor);
+				continue;
 			}
 			double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
 			Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
@@ -94,13 +72,14 @@ public class Path {
 			
 			path.add(new_point);
 
-			if (inRange(dronePosition(path), next_sensor)){
+			if (inRange(dronePosition(path), next_sensor)) {
 				visitedSensors.add(next_sensor);
 				move_counter++;
 			}
 			else {
 				move_counter++;
 			}
+			
 			if (move_counter == 150 || visitedSensors.size() == 33) {
 				break;
 			}
@@ -130,7 +109,42 @@ public class Path {
 	
 	
 	
-
+	
+	
+	
+	
+	
+	
+	private void getNoFly() throws IOException, InterruptedException{
+		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
+        var no_fly_response = client.send(no_fly_request, BodyHandlers.ofString());
+        
+        FeatureCollection no_fly_collection = FeatureCollection.fromJson(no_fly_response.body());        
+        List<Feature> no_fly_list = no_fly_collection.features();
+        List<Geometry> no_fly_geometrys = new ArrayList<>();
+        
+        for (Feature f : no_fly_list) {
+        	no_fly_geometrys.add(f.geometry());
+        }
+        
+        var no_fly_polygons = new ArrayList<Polygon>();
+        
+        for (Geometry g : no_fly_geometrys) {
+        	if (g instanceof Polygon) {
+        		no_fly_polygons.add((Polygon)g);
+        	}
+        }
+        
+        
+        
+         appleton = no_fly_polygons.get(0);
+         dht = no_fly_polygons.get(1);
+         library = no_fly_polygons.get(2);
+         forum = no_fly_polygons.get(3);
+	   
+         
+	}
+	
 	// returns the euclidean distance between two points
 	private static double getDistance(Point p1, Point p2) {
 		
@@ -327,7 +341,21 @@ public class Path {
     	return (Math.round(x * 1000000.0)/1000000.0);
     }
     
-	
+   
+    // this method writes a feature collection to a geojson file
+	public static void writeReadings(FeatureCollection collection, String day, String month, String year) {
+        try {
+			FileWriter fw = new FileWriter("readings-" + day + "-" + month + "-" + year + ".geojson");
+			PrintWriter pw = new PrintWriter(fw);
+			
+			pw.println(collection.toJson());
+			pw.close();	
+		
+	}
+		catch (IOException e) {
+			System.out.println("error");
+		}
+	}
 	
 
 }

@@ -12,14 +12,14 @@ import java.util.ArrayList;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.Geometry;
+import com.mapbox.geojson.Point;
 
 public class Data {
 
 	private static final HttpClient client = HttpClient.newHttpClient();
 	private ArrayList<Maps> data_list;			 // this list stores the location, reading and battery percentage of each sensor
 	private ArrayList<Sensor> sensorDetails;	 // this list stores the sensors as objects
-	private ArrayList<HttpResponse<String>> detailsList;
-	private ArrayList<String[]> splitLocations;
 	
 	public Data(String day, String month, String year) throws IOException, InterruptedException {
 		
@@ -63,9 +63,50 @@ public class Data {
     	}
     }
 	
+    
+    public ArrayList<HttpResponse<String>> getDetails() throws IOException, InterruptedException{
+    	var splitLocations = new ArrayList<String[]>();
+    	
+    	// splitting the locations at "."
+        for (int i = 0; i < sensorDetails.size(); i++) {
+      	  splitLocations.add(sensorDetails.get(i).getLocation().split("\\."));
+        }
+        
+        
+        // this list stores the responses to the word request from the web server
+        var detailsList = new ArrayList<HttpResponse<String>>();
+      
+      
+      // pulling the details from the web server
+      for (int i = 0; i < splitLocations.size(); i++) {
+    	  var detailsRequest = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + splitLocations.get(i)[0] + "/" + splitLocations.get(i)[1] + "/" + splitLocations.get(i)[2] + "/details.json")).build();
+    	  detailsList.add(client.send(detailsRequest, BodyHandlers.ofString()));
+      }
+      return detailsList;
+    }
 	
-	
+    
+    public ArrayList<Point> getSensorCoordinates (ArrayList<HttpResponse<String>> detailsList){
+    	
+    	 var coordinates_list = new ArrayList<Coordinates>();	// stores the coordinates of all the sensors 
+         var sensor_positions = new ArrayList<Point>();			
+          
+         
+         for (int i = 0; i < detailsList.size(); i++){
+         	var words = new Gson().fromJson(detailsList.get(i).body(), Words.class);
+         	coordinates_list.add(new Coordinates(words.coordinates.lng, words.coordinates.lat));
+         }
+         
+         for (int p = 0; p < coordinates_list.size(); p++) {
+         	sensor_positions.add(Point.fromLngLat(coordinates_list.get(p).getLongitude(), coordinates_list.get(p).getLatitude()));
+         }
+         
+         return sensor_positions;
+         
+    }
+    
 }
+
 	
 	
 	

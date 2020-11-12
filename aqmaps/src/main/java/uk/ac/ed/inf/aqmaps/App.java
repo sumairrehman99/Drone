@@ -43,9 +43,6 @@ public class App
         var starting_longitude = Double.parseDouble(args[4]);
        
 
-       
-           
-
         
         var line_points = new ArrayList<Point>();
         line_points.add(Point.fromLngLat(-3.192473, 55.946233));
@@ -69,56 +66,20 @@ public class App
         
         var readings = data.getSensorReadings(sensorDetails);
         
-        var splitLocations = new ArrayList<String[]>();
-        
-        
-        
-        
-        
-        // splitting the locations at "."
-        for (int i = 0; i < sensorDetails.size(); i++) {
-      	  splitLocations.add(sensorDetails.get(i).getLocation().split("\\."));
-        }
+
     
-        
-//    this list stores the responses to the word request from the web server
-      var detailsList = new ArrayList<HttpResponse<String>>();
-      
-      
-      // pulling the details from the web server
-      for (int i = 0; i < splitLocations.size(); i++) {
-    	  var detailsRequest = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + splitLocations.get(i)[0] + "/" + splitLocations.get(i)[1] + "/" + splitLocations.get(i)[2] + "/details.json")).build();
-    	  detailsList.add(client.send(detailsRequest, BodyHandlers.ofString()));
-      }
-      	
+        // this list stores the What3Words details
+        ArrayList<HttpResponse<String>> detailsList =  data.getDetails();       
         
         
         // plotting the sensors on the map
-        
-        var coordinates_list = new ArrayList<Coordinates>();	// stores the coordinates of all the sensors 
-        var sensor_positions = new ArrayList<Point>();			
-        
-        
-        
-       
-        
-        
-        for (int i = 0; i < detailsList.size(); i++){
-        	var words = new Gson().fromJson(detailsList.get(i).body(), Words.class);
-        	coordinates_list.add(new Coordinates(words.coordinates.lng, words.coordinates.lat));
-        }
-        
-        for (int p = 0; p < coordinates_list.size(); p++) {
-        	sensor_positions.add(Point.fromLngLat(coordinates_list.get(p).getLongitude(), coordinates_list.get(p).getLatitude()));
-        }
-        
+       var sensor_positions = data.getSensorCoordinates(detailsList);
         
         for (int x = 0; x < sensor_positions.size(); x++) {
         	geometry_list.add((Geometry) sensor_positions.get(x));
         }
         
-       
-        
+
        
         path.add(Point.fromLngLat(starting_longitude, starting_latitude));
         
@@ -128,10 +89,7 @@ public class App
         
         
         Path.buildPath();
-       
-        
-        
-        
+
        	
         System.out.println(Path.getMoves());
         System.out.println(Path.getSensors());
@@ -147,33 +105,13 @@ public class App
         	featureList.add(Feature.fromGeometry(geometry_list.get(y)));
         }
         
-        
         data.drawSensors(readings, sensorDetails, featureList);
-        
-    
-      
+
         FeatureCollection collection = FeatureCollection.fromFeatures(featureList);
         
-        
-        String geojson_file = collection.toJson();
-
+        Path.writeReadings(collection, day, month, year);
         
         
-        
-        
-        
-        // Writing the readings to the file 
-         try {
- 			FileWriter fw = new FileWriter("readings-" + day + "-" + month + "-" + year + ".geojson");
- 			PrintWriter pw = new PrintWriter(fw);
- 			
- 			pw.println(geojson_file);
- 			pw.close();	
- 		
- 	}
- 		catch (IOException e) {
- 			System.out.println("error");
- 		}
         
          
         // Writing the flightpath-DD-MM-YYYY.txt file 

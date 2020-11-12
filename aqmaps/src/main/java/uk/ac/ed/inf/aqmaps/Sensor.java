@@ -37,8 +37,8 @@ public class Sensor {
 		try {
 			return Double.parseDouble(reading);
 		}
-		catch (NumberFormatException e) {			// the only way an exception will be returned is if the reading is "null" since it isn't a number
-			return -1;								// -1 in this case means null
+		catch (NumberFormatException e) {			// the only way an exception will be returned is if the reading is "null" or "NaN" since it isn't a number
+			return -1;								// -1 in this case means null or NaN
 		}
 	}
 	
