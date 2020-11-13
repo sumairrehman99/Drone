@@ -12,10 +12,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import com.mapbox.turf.TurfJoins;
-import com.mapbox.turf.*;
+import com.mapbox.turf.TurfMeta;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Geometry;
+import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
 
@@ -29,10 +30,7 @@ public class Path {
 	private static HashMap<String, Polygon> noFlyMap;
 	private static List<Polygon> no_fly_polygons;
 	private static final HttpClient client = HttpClient.newHttpClient();
-	private static Polygon appleton;
-	private static Polygon dht;
-	private static Polygon library;
-	private static Polygon forum;
+	
 	
     
     
@@ -40,20 +38,21 @@ public class Path {
 
 
 	
-	public Path(List<Point> sensor_positions, Point droneLocation, List<Point> visitedSensors, List<Point> path) throws IOException, InterruptedException {
+	public Path(List<Point> sensor_positions, Point droneLocation, List<Point> visitedSensors, List<Point> path) {
 		Path.sensor_positions = sensor_positions;
 		this.droneLocation = droneLocation;
 		Path.visitedSensors = visitedSensors;
-		Path.path = path;
-		
-		
+		Path.path = path;	
 	}
 	
 	
 	
 	
 	
-	public static void buildPath() {
+	public static LineString buildPath() throws IOException, InterruptedException {
+		
+		var no_flys = getNoFly();
+		
 		
 		// flying to the sensors
 		while (visitedSensors.size() < 33 || move_counter < 150) {
@@ -66,9 +65,11 @@ public class Path {
 			Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
 			new_point = checkBoundary(new_point, dronePosition(path));
 			
-		
 			
-
+			
+			
+			
+			
 			
 			path.add(new_point);
 
@@ -102,8 +103,28 @@ public class Path {
 	    	   move_counter++;
 	       }
 
-				
+		LineString flight_path = LineString.fromLngLats(path);
 		
+		
+		return flight_path;
+	}
+	
+	
+	
+	
+	private static ArrayList<Point> checkNoFly(LineString line) throws IOException, InterruptedException {
+		ArrayList<Polygon> no_flys =  getNoFly();
+		var trespass = new ArrayList<Point>();
+		var allCoords = TurfMeta.coordAll(line);
+		
+		for (Point p : allCoords) {
+			for (Polygon pol : no_flys) {
+				if (TurfJoins.inside(p, pol)) {
+					trespass.add(p);
+				}
+			}
+		}
+		return trespass;
 	}
 	
 	
@@ -112,10 +133,8 @@ public class Path {
 	
 	
 	
-	
-	
-	
-	private void getNoFly() throws IOException, InterruptedException{
+	private static ArrayList<Polygon> getNoFly() throws IOException, InterruptedException {
+		
 		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
         var no_fly_response = client.send(no_fly_request, BodyHandlers.ofString());
         
@@ -127,6 +146,7 @@ public class Path {
         	no_fly_geometrys.add(f.geometry());
         }
         
+        
         var no_fly_polygons = new ArrayList<Polygon>();
         
         for (Geometry g : no_fly_geometrys) {
@@ -134,16 +154,11 @@ public class Path {
         		no_fly_polygons.add((Polygon)g);
         	}
         }
-        
-        
-        
-         appleton = no_fly_polygons.get(0);
-         dht = no_fly_polygons.get(1);
-         library = no_fly_polygons.get(2);
-         forum = no_fly_polygons.get(3);
-	   
-         
+		
+		return no_fly_polygons;
+		
 	}
+	
 	
 	// returns the euclidean distance between two points
 	private static double getDistance(Point p1, Point p2) {

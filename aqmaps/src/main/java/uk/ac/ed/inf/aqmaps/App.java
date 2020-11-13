@@ -1,18 +1,12 @@
   
 package uk.ac.ed.inf.aqmaps;
 
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.Gson;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Geometry;
@@ -26,8 +20,6 @@ import com.mapbox.geojson.Polygon;
 
 public class App 
 {
-
-	private static final HttpClient client = HttpClient.newHttpClient();
 	private static ArrayList<Point> visitedSensors = new ArrayList<Point>();
 	private static ArrayList<Point> path = new ArrayList<Point>();
 	private static ArrayList<Geometry> geometry_list = new ArrayList<>();
@@ -88,14 +80,13 @@ public class App
         
         
         
-        Path.buildPath();
+        LineString flight_path = Path.buildPath();
 
        	
         System.out.println(Path.getMoves());
         System.out.println(Path.getSensors());
+       
         
-        
-        LineString flight_path = LineString.fromLngLats(path);
         LineString boundary = LineString.fromLngLats(line_points);
         geometry_list.add((Geometry) flight_path);
         geometry_list.add((Geometry) boundary);
@@ -111,24 +102,7 @@ public class App
         
         Path.writeReadings(collection, day, month, year);
         
-        
-        
-         
-        // Writing the flightpath-DD-MM-YYYY.txt file 
-//        try {
-//        	FileWriter fw = new FileWriter("flightpath-" + day + "-" + month + "-" + year + ".txt");
-//        	PrintWriter pw = new PrintWriter(fw);
-//        	
-//        	for (int i = 1; i <= move_counter; i++) {
-//        		pw.println(i + "," + path_list.get(i - 1).longitude() + "," + path_list.get(i - 1).latitude() + "," + angles.get(i -1) + "," + path_list.get(i).longitude() + "," + path_list.get(i).latitude() + "," + sensor_names.get(i - 1));       		
-//        	}
-//        	pw.close();
-//        }
-//        catch (IOException e) {
-//        	System.out.println("error");
-//        }
-        
-        
+ 
     }
 // end of the main method
 
