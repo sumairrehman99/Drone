@@ -9,7 +9,6 @@ public class Coordinates {
 
 	private double longitude;
 	private double latitude;
-	private ArrayList<Geometry> geometry_list;
 	
 	
 	public Coordinates(double longitude, double latitude) {

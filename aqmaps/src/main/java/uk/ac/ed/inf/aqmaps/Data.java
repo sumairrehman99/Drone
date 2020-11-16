@@ -19,7 +19,7 @@ public class Data {
 
 	private static final HttpClient client = HttpClient.newHttpClient();
 	private ArrayList<Maps> data_list;			 // this list stores the location, reading and battery percentage of each sensor
-	private ArrayList<Sensor> sensorDetails;	 // this list stores the sensors as objects
+	private ArrayList<Sensor> sensor_details;	 // this list stores the sensors as objects
 	
 	public Data(String day, String month, String year) throws IOException, InterruptedException {
 		
@@ -31,10 +31,10 @@ public class Data {
        
         data_list = new Gson().fromJson(data_response.body(), mapsType);
         
-        sensorDetails = new ArrayList<Sensor>();
+        sensor_details = new ArrayList<Sensor>();
         
         for (int i = 0; i < data_list.size(); i++) {
-        	sensorDetails.add(new Sensor(data_list.get(i).location, data_list.get(i).reading, data_list.get(i).battery));
+        	sensor_details.add(new Sensor(data_list.get(i).location, data_list.get(i).reading, data_list.get(i).battery));
         }
         
         
@@ -42,8 +42,9 @@ public class Data {
 	
 	
 	
-	public ArrayList<Sensor> getSensors(){
-		return sensorDetails;
+	// this method returns an arraylist of sensors which contains their locations, readings and battery percentages
+	public ArrayList<Sensor> getSensorDetails(){
+		return sensor_details;
 	}
 	
 	public ArrayList<Double> getSensorReadings(ArrayList<Sensor> sensors){
@@ -56,33 +57,33 @@ public class Data {
 	
 	
 	// drawing the sensors on the map
-    public void drawSensors(ArrayList<Double> readings, ArrayList<Sensor> sensors, ArrayList<Feature> f) {
+    public void drawSensors(ArrayList<Double> readings, ArrayList<Sensor> sensors, ArrayList<Feature> feature_list) {
     	for (int i = 0; i < sensors.size(); i++) {
     		sensors.get(i);
-    		Sensor.drawSensors(readings.get(i), sensorDetails.get(i).getBattery(), sensorDetails.get(i).getLocation(), f.get(i));
+    		Sensor.drawSensors(readings.get(i), sensor_details.get(i).getBattery(), sensor_details.get(i).getLocation(), feature_list.get(i));
     	}
     }
 	
     
     public ArrayList<HttpResponse<String>> getDetails() throws IOException, InterruptedException{
-    	var splitLocations = new ArrayList<String[]>();
+    	var split_locations = new ArrayList<String[]>();
     	
     	// splitting the locations at "."
-        for (int i = 0; i < sensorDetails.size(); i++) {
-      	  splitLocations.add(sensorDetails.get(i).getLocation().split("\\."));
+        for (int i = 0; i < sensor_details.size(); i++) {
+      	  split_locations.add(sensor_details.get(i).getLocation().split("\\."));
         }
         
         
         // this list stores the responses to the word request from the web server
-        var detailsList = new ArrayList<HttpResponse<String>>();
+        var details_list = new ArrayList<HttpResponse<String>>();
       
       
       // pulling the details from the web server
-      for (int i = 0; i < splitLocations.size(); i++) {
-    	  var detailsRequest = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + splitLocations.get(i)[0] + "/" + splitLocations.get(i)[1] + "/" + splitLocations.get(i)[2] + "/details.json")).build();
-    	  detailsList.add(client.send(detailsRequest, BodyHandlers.ofString()));
+      for (int i = 0; i < split_locations.size(); i++) {
+    	  var details_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + split_locations.get(i)[0] + "/" + split_locations.get(i)[1] + "/" + split_locations.get(i)[2] + "/details.json")).build();
+    	  details_list.add(client.send(details_request, BodyHandlers.ofString()));
       }
-      return detailsList;
+      return details_list;
     }
 	
     

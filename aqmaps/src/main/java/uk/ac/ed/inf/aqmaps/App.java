@@ -20,10 +20,10 @@ import com.mapbox.geojson.Polygon;
 
 public class App 
 {
-	private static ArrayList<Point> visitedSensors = new ArrayList<Point>();
-	private static ArrayList<Point> path = new ArrayList<Point>();
-	private static ArrayList<Geometry> geometry_list = new ArrayList<>();
-    private static ArrayList<Feature> featureList = new ArrayList<>();
+	private static ArrayList<Point> visited_sensors = new ArrayList<Point>();
+	private static ArrayList<Point> current_path = new ArrayList<Point>();				
+	private static ArrayList<Geometry> geometry_list = new ArrayList<>();		// stores the geometries of the sensors and the flight path
+    private static ArrayList<Feature> feature_list = new ArrayList<>();
 	
     public static void main( String[] args ) throws IOException, InterruptedException
     {
@@ -54,18 +54,18 @@ public class App
         
         Data data = new Data(day, month, year);
         
-        var sensorDetails = data.getSensors();        
+        var sensor_details = data.getSensorDetails();        
         
-        var readings = data.getSensorReadings(sensorDetails);
+        var readings = data.getSensorReadings(sensor_details);
         
 
     
         // this list stores the What3Words details
-        ArrayList<HttpResponse<String>> detailsList =  data.getDetails();       
+        ArrayList<HttpResponse<String>> details_list =  data.getDetails();       
         
         
         // plotting the sensors on the map
-       var sensor_positions = data.getSensorCoordinates(detailsList);
+       var sensor_positions = data.getSensorCoordinates(details_list);
         
         for (int x = 0; x < sensor_positions.size(); x++) {
         	geometry_list.add((Geometry) sensor_positions.get(x));
@@ -73,19 +73,18 @@ public class App
         
 
        
-        path.add(Point.fromLngLat(starting_longitude, starting_latitude));
+        current_path.add(Point.fromLngLat(starting_longitude, starting_latitude));
         
         
-        new Path(sensor_positions, path.get(path.size() -1), visitedSensors, path);
+        new Path(sensor_positions, current_path);
         
         
         
-        LineString flight_path = Path.buildPath();
+        LineString flight_path = Path.buildPath(visited_sensors);
 
        	
         System.out.println(Path.getMoves());
-        System.out.println(Path.getSensors());
-       
+        System.out.println(Path.getSensors(visited_sensors));
         
         LineString boundary = LineString.fromLngLats(line_points);
         geometry_list.add((Geometry) flight_path);
@@ -93,12 +92,12 @@ public class App
         
         
         for (int y = 0; y < geometry_list.size(); y++) {
-        	featureList.add(Feature.fromGeometry(geometry_list.get(y)));
+        	feature_list.add(Feature.fromGeometry(geometry_list.get(y)));
         }
         
-        data.drawSensors(readings, sensorDetails, featureList);
+        data.drawSensors(readings, sensor_details, feature_list);
 
-        FeatureCollection collection = FeatureCollection.fromFeatures(featureList);
+        FeatureCollection collection = FeatureCollection.fromFeatures(feature_list);
         
         Path.writeReadings(collection, day, month, year);
         
