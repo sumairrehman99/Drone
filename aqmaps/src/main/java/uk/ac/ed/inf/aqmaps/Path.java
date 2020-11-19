@@ -68,8 +68,15 @@ public class Path extends App {
 		while (visited_sensors.size() < 33 || move_counter < 150) {
 			Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visited_sensors);
 			if (inRange(next_sensor, dronePosition(path))) {
+				double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
+				angles.add((int) angle);
+				Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
+				path.add(new_point);
+				new_point = path.get(0);
+				path.add(new_point);
 				sensor_names.add(names.get(sensor_positions.indexOf(next_sensor)));
 				visited_sensors.add(next_sensor);
+				move_counter++;
 				continue;
 			}
 			
@@ -79,18 +86,7 @@ public class Path extends App {
 			
 			new_point = checkBoundary(new_point, dronePosition(path));
 			
-			
-//			for (Polygon pol : no_flys) {
-//				Point tresspass = new_point;
-//				if (TurfJoins.inside(tresspass, pol)) {
-//					
-//				}
-//				new_point = tresspass;
-//			}
-			
-			
-			
-			
+						
 			path.add(new_point);
 
 			if (inRange(dronePosition(path), next_sensor)) {
@@ -103,13 +99,13 @@ public class Path extends App {
 				move_counter++;
 			}
 			
-			
-			
-			
 			if (move_counter == 150 || visited_sensors.size() == 33) {
 				break;
 			}
 		}
+		
+		
+		
 		
 		// returning to the starting position
 		while (move_counter < 150) {
@@ -138,6 +134,11 @@ public class Path extends App {
 	}
 	
 	
+	
+	
+	private static Point getStartingPoint(List<Point> path) {
+		return path.get(0);
+	}
 	
 	
 	public static void testFunction() {
