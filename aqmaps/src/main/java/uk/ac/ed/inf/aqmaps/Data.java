@@ -87,6 +87,17 @@ public class Data {
     }
 	
     
+    public ArrayList<String> getSensorNames(){
+    	var names = new ArrayList<String>();
+    	
+    	for (int i = 0; i < sensor_details.size(); i++) {
+    		names.add(sensor_details.get(i).getLocation());
+    	}
+    	return names;
+    	
+    }
+    
+    
     public ArrayList<Point> getSensorCoordinates (ArrayList<HttpResponse<String>> detailsList){
     	
     	 var coordinates_list = new ArrayList<Coordinates>();	// stores the coordinates of all the sensors 

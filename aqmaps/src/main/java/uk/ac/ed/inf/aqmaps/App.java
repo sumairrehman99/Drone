@@ -20,8 +20,9 @@ import com.mapbox.geojson.Polygon;
 
 public class App 
 {
-	private static ArrayList<Point> visited_sensors = new ArrayList<Point>();
-	private static ArrayList<Point> current_path = new ArrayList<Point>();				
+	private static ArrayList<Point> visited_sensors = new ArrayList<>();
+	private static ArrayList<Point> current_path = new ArrayList<>();	
+	private static ArrayList<Integer> angles = new ArrayList<>();
 	private static ArrayList<Geometry> geometry_list = new ArrayList<>();		// stores the geometries of the sensors and the flight path
     private static ArrayList<Feature> feature_list = new ArrayList<>();
 	
@@ -58,6 +59,7 @@ public class App
         
         var readings = data.getSensorReadings(sensor_details);
         
+        var names = data.getSensorNames();
 
     
         // this list stores the What3Words details
@@ -76,13 +78,15 @@ public class App
         current_path.add(Point.fromLngLat(starting_longitude, starting_latitude));
         
         
-        new Path(sensor_positions, current_path);
-        
-        
-        
-        LineString flight_path = Path.buildPath(visited_sensors);
+        new Path(sensor_positions, current_path, angles, names);
 
+        
+        LineString flight_path = Path.buildPath(visited_sensors, day, month, year);
+        
        	
+        
+        
+        
         System.out.println(Path.getMoves());
         System.out.println(Path.getSensors(visited_sensors));
         
@@ -100,8 +104,8 @@ public class App
         FeatureCollection collection = FeatureCollection.fromFeatures(feature_list);
         
         Path.writeReadings(collection, day, month, year);
+        //Path.writeFlightPath(day, month, year, angles);
         
- 
     }
 // end of the main method
 

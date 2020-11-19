@@ -20,63 +20,93 @@ import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
 
-public class Path {
+public class Path extends App {
 
 	private static  List<Point> sensor_positions;
 	private static int move_counter = 0;
-	private static List<Point> path; 
+	private static ArrayList<Point> path; 
 	private static HashMap<String, Polygon> noFlyMap;
-	private static List<Polygon> no_fly_polygons;
+	private static ArrayList<Polygon> no_fly_polygons;
 	private static final HttpClient client = HttpClient.newHttpClient();
-	
-	
+	private static ArrayList<Integer> angles;
+	private static ArrayList<String> sensor_names;
     
     
     
 
 
 	
-	public Path(List<Point> sensor_positions, List<Point> path) {
+	public Path(List<Point> sensor_positions, ArrayList<Point> path, ArrayList<Integer> angles, ArrayList<String> sensor_names) {
 		Path.sensor_positions = sensor_positions;
 		Path.path = path;	
+		Path.angles = angles;
+		Path.sensor_names = sensor_names;
 	}
 	
 	
 	
 	
 	
-	public static LineString buildPath(List<Point> visitedSensors) throws IOException, InterruptedException {
+	public static LineString buildPath(List<Point> visited_sensors, String day, String month, String year) throws IOException, InterruptedException {
+		
+		Data data = new Data(day, month, year);
+		 
+		// this list stores the What3Words details
+        ArrayList<HttpResponse<String>> details_list =  data.getDetails();       
+        
+        
+       // plotting the sensors on the map
+       var sensor_positions = data.getSensorCoordinates(details_list);
+       var names = data.getSensorNames();
+		
+       sensor_names.clear();
 		
 		var no_flys = getNoFly();
 		
 		
 		// flying to the sensors
-		while (visitedSensors.size() < 33 || move_counter < 150) {
-			Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visitedSensors);
+		while (visited_sensors.size() < 33 || move_counter < 150) {
+			Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visited_sensors);
 			if (inRange(next_sensor, dronePosition(path))) {
-				visitedSensors.add(next_sensor);
+				sensor_names.add(names.get(sensor_positions.indexOf(next_sensor)));
+				visited_sensors.add(next_sensor);
 				continue;
 			}
+			
 			double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
+			angles.add((int) angle);
 			Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
+			
 			new_point = checkBoundary(new_point, dronePosition(path));
 			
 			
-			if (new_point.latitude() > 55.946233) {
-				System.out.println(flightDirection(path, new_point));
-			}
+//			for (Polygon pol : no_flys) {
+//				Point tresspass = new_point;
+//				if (TurfJoins.inside(tresspass, pol)) {
+//					
+//				}
+//				new_point = tresspass;
+//			}
+			
+			
+			
 			
 			path.add(new_point);
 
 			if (inRange(dronePosition(path), next_sensor)) {
-				visitedSensors.add(next_sensor);
+				sensor_names.add(names.get(sensor_positions.indexOf(next_sensor)));
+				visited_sensors.add(next_sensor);
 				move_counter++;
 			}
 			else {
+				sensor_names.add(null);
 				move_counter++;
 			}
 			
-			if (move_counter == 150 || visitedSensors.size() == 33) {
+			
+			
+			
+			if (move_counter == 150 || visited_sensors.size() == 33) {
 				break;
 			}
 		}
@@ -85,13 +115,15 @@ public class Path {
 		while (move_counter < 150) {
 	    	   Point start = path.get(0);
 	    	   double angle = findAngle(dronePosition(path), start, sensorDirection(dronePosition(path), start));
-	    	   Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
-
+	    	   angles.add((int) angle);
+	    	   Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));	    	   
+	    	   
 	    	   if (getDistance(start, dronePosition(path)) < 0.0003) {
 	    		   break;
 	    	   }
 	    	   
 	    	   path.add(new_point);
+	    	   sensor_names.add(null);
 	    	   move_counter++;
 	       }
 		
@@ -108,39 +140,17 @@ public class Path {
 	
 	
 	
-	
-	
-	public static void testPath(List<Point> path) throws IOException, InterruptedException {
-		var no_flys = getNoFly();
-		for (Polygon p : no_flys) {
-			for (Point x : path) {
-				if (TurfJoins.inside(x, p)) {
-					System.out.println(true);
-				}
-			}
-	}	
-	}
-	
-	
-	private static ArrayList<Point> checkNoFly(LineString line) throws IOException, InterruptedException {
-		ArrayList<Polygon> no_flys =  getNoFly();
-		var trespass = new ArrayList<Point>();
-		var allCoords = TurfMeta.coordAll(line);
-		
-		for (Point p : allCoords) {
-			for (Polygon pol : no_flys) {
-				if (TurfJoins.inside(p, pol)) {
-					trespass.add(p);
-				}
-			}
+	public static void testFunction() {
+		for (int i = 0; i < sensor_names.size(); i++) {
+			System.out.println(sensor_names.get(i));
 		}
-		return trespass;
+		
 	}
 	
 	
-	
-	
-	
+	public static ArrayList<Integer> getAngles() {
+    	return angles;
+    }
 	
 	
 	private static ArrayList<Polygon> getNoFly() throws IOException, InterruptedException {
@@ -168,6 +178,10 @@ public class Path {
 		return no_fly_polygons;
 		
 	}
+	
+	
+	
+	
 	
 	
 	// returns the euclidean distance between two points
@@ -389,6 +403,7 @@ public class Path {
     }
     
    
+
     // this method writes a feature collection to a geojson file
 	public static void writeReadings(FeatureCollection collection, String day, String month, String year) {
         try {
@@ -399,6 +414,23 @@ public class Path {
 			pw.close();	
 		
 	}
+		catch (IOException e) {
+			System.out.println("error");
+		}
+	}
+	
+	
+	// this method writes the flighpath-DD-MM-YYYY.txt file
+	public static void writeFlightPath(String day, String month, String year, ArrayList<Integer> angles) {
+		try {
+			FileWriter fw = new FileWriter("flightpath-" + day + "-" + month + "-" + year + ".txt");
+			PrintWriter pw = new PrintWriter(fw);
+					
+			for (int i = 1; i <= move_counter; i++) {
+				pw.println(i + "," + path.get(i-1).longitude() + "," + path.get(i-1).latitude() + "," + angles.get(i-1) + "," + path.get(i).longitude() + "," + path.get(i).latitude() + "," + sensor_names.get(i-1));
+			}
+			pw.close();
+		}
 		catch (IOException e) {
 			System.out.println("error");
 		}
