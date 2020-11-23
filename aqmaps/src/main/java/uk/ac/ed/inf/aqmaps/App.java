@@ -20,9 +20,9 @@ import com.mapbox.geojson.Polygon;
 
 public class App 
 {
-	private static ArrayList<Point> visited_sensors = new ArrayList<>();
-	private static ArrayList<Point> current_path = new ArrayList<>();	
-	private static ArrayList<Integer> angles = new ArrayList<>();
+	private static ArrayList<Point> visited_sensors = new ArrayList<>();		// stroes all the coordinates of the sensors the drone has already visited
+	private static ArrayList<Point> current_path = new ArrayList<>();			// stores all the points the drone has travelled so far
+	private static ArrayList<Integer> angles = new ArrayList<>();				// stores all the angles that the drone moves
 	private static ArrayList<Geometry> geometry_list = new ArrayList<>();		// stores the geometries of the sensors and the flight path
     private static ArrayList<Feature> feature_list = new ArrayList<>();
 	
@@ -54,34 +54,28 @@ public class App
         
         
         Data data = new Data(day, month, year);
-        
-        var sensor_details = data.getSensorDetails();        
-        
-        var readings = data.getSensorReadings(sensor_details);
-        
-        var names = data.getSensorNames();
 
+        
     
-        // this list stores the What3Words details
-        ArrayList<HttpResponse<String>> details_list =  data.getDetails();       
+             
         
         
         // plotting the sensors on the map
-       var sensor_positions = data.getSensorCoordinates(details_list);
+       var sensor_positions = data.getSensorCoordinates();
         
         for (int x = 0; x < sensor_positions.size(); x++) {
         	geometry_list.add((Geometry) sensor_positions.get(x));
         }
         
 
-       
+        // adding the starting position to the route
         current_path.add(Point.fromLngLat(starting_longitude, starting_latitude));
         
         
-        new Path(sensor_positions, current_path, angles, names);
+        new Path(sensor_positions, current_path, angles, data);
 
         
-        LineString flight_path = Path.buildPath(visited_sensors, day, month, year);
+        LineString flight_path = Path.buildPath(visited_sensors);
         
        	
         
@@ -99,7 +93,7 @@ public class App
         	feature_list.add(Feature.fromGeometry(geometry_list.get(y)));
         }
         
-        data.drawSensors(readings, sensor_details, feature_list);
+        data.drawSensors(feature_list);
 
         FeatureCollection collection = FeatureCollection.fromFeatures(feature_list);
         

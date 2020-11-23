@@ -43,12 +43,14 @@ public class Data {
 	
 	
 	// this method returns an arraylist of sensors which contains their locations, readings and battery percentages
-	public ArrayList<Sensor> getSensorDetails(){
+	private ArrayList<Sensor> getSensorDetails(){
 		return sensor_details;
 	}
 	
-	public ArrayList<Double> getSensorReadings(ArrayList<Sensor> sensors){
+	// this method parses each sensor reading as a double and returns them in a list
+	private ArrayList<Double> getSensorReadings(){
 		ArrayList<Double> readings  = new ArrayList<>();
+		var sensors = getSensorDetails();
 		for (int i = 0; i < sensors.size(); i++) {
         	readings.add(sensors.get(i).parseReadings(sensors.get(i).getReading()));
         }
@@ -57,7 +59,9 @@ public class Data {
 	
 	
 	// drawing the sensors on the map
-    public void drawSensors(ArrayList<Double> readings, ArrayList<Sensor> sensors, ArrayList<Feature> feature_list) {
+    public void drawSensors(ArrayList<Feature> feature_list) {
+    	var sensors = getSensorDetails();
+    	var readings = getSensorReadings();
     	for (int i = 0; i < sensors.size(); i++) {
     		sensors.get(i);
     		Sensor.drawSensors(readings.get(i), sensor_details.get(i).getBattery(), sensor_details.get(i).getLocation(), feature_list.get(i));
@@ -65,6 +69,7 @@ public class Data {
     }
 	
     
+    // this method returns the details of a What3Words location
     public ArrayList<HttpResponse<String>> getDetails() throws IOException, InterruptedException{
     	var split_locations = new ArrayList<String[]>();
     	
@@ -87,6 +92,7 @@ public class Data {
     }
 	
     
+    // this method gets the What3Words names of all the sensors
     public ArrayList<String> getSensorNames(){
     	var names = new ArrayList<String>();
     	
@@ -98,14 +104,15 @@ public class Data {
     }
     
     
-    public ArrayList<Point> getSensorCoordinates (ArrayList<HttpResponse<String>> detailsList){
-    	
+    // this method returns the coordinates of the each sensor as a (lng,lat) point
+    public ArrayList<Point> getSensorCoordinates () throws IOException, InterruptedException{
+    	 var details_list = getDetails();
     	 var coordinates_list = new ArrayList<Coordinates>();	// stores the coordinates of all the sensors 
          var sensor_positions = new ArrayList<Point>();			
           
          
-         for (int i = 0; i < detailsList.size(); i++){
-         	var words = new Gson().fromJson(detailsList.get(i).body(), Words.class);
+         for (int i = 0; i < details_list.size(); i++){
+         	var words = new Gson().fromJson(details_list.get(i).body(), Words.class);
          	coordinates_list.add(new Coordinates(words.coordinates.lng, words.coordinates.lat));
          }
          

@@ -25,9 +25,7 @@ public class Coordinates {
 		return latitude;
 	}
 	
-	public void plotSensors(ArrayList<Coordinates> coordinates, ArrayList<Point> sensors) {
-		
-	}
+	
 	
 
 }

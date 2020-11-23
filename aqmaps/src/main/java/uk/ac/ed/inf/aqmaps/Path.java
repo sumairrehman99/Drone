@@ -24,40 +24,38 @@ public class Path extends App {
 
 	private static  List<Point> sensor_positions;
 	private static int move_counter = 0;
-	private static ArrayList<Point> path; 
+	private static ArrayList<Point> path; 					// stores all the points the drone visits on its journey
 	private static HashMap<String, Polygon> noFlyMap;
 	private static ArrayList<Polygon> no_fly_polygons;
 	private static final HttpClient client = HttpClient.newHttpClient();
-	private static ArrayList<Integer> angles;
-	private static ArrayList<String> sensor_names;
+	private static ArrayList<Integer> angles;				// stores the angles that the drone moves
+	private static ArrayList<String> sensor_names;			// stores the names of the sensors in the order they are visited
+	private static Data data;
     
     
     
 
 
 	
-	public Path(List<Point> sensor_positions, ArrayList<Point> path, ArrayList<Integer> angles, ArrayList<String> sensor_names) {
+	public Path(List<Point> sensor_positions, ArrayList<Point> path, ArrayList<Integer> angles, Data data) {
 		Path.sensor_positions = sensor_positions;
 		Path.path = path;	
 		Path.angles = angles;
-		Path.sensor_names = sensor_names;
+		Path.data = data;
+		
+		sensor_names = data.getSensorNames();
 	}
 	
 	
 	
 	
 	
-	public static LineString buildPath(List<Point> visited_sensors, String day, String month, String year) throws IOException, InterruptedException {
+	public static LineString buildPath(List<Point> visited_sensors) throws IOException, InterruptedException {
 		
-		Data data = new Data(day, month, year);
-		 
-		// this list stores the What3Words details
-        ArrayList<HttpResponse<String>> details_list =  data.getDetails();       
-        
-        
-       // plotting the sensors on the map
-       var sensor_positions = data.getSensorCoordinates(details_list);
-       var names = data.getSensorNames();
+            
+       var sensor_positions = data.getSensorCoordinates();
+       var names = data.getSensorNames();       
+
 		
        sensor_names.clear();
 		
@@ -67,7 +65,8 @@ public class Path extends App {
 		// flying to the sensors
 		while (visited_sensors.size() < 33 || move_counter < 150) {
 			Point next_sensor = closestSensor(sensor_positions, dronePosition(path), visited_sensors);
-			// if the next sensor is in range of the starting position of the drone
+			
+			// if the first sensor is in range of the starting position of the drone
 			if (inRange(next_sensor, dronePosition(path)) && move_counter == 0) {
 				double angle = nearestTen(findAngle(dronePosition(path), next_sensor, sensorDirection(dronePosition(path), next_sensor)));
 				angles.add((int) angle);
@@ -86,6 +85,9 @@ public class Path extends App {
 			angles.add((int) angle);
 			Point new_point = Point.fromLngLat(dronePosition(path).longitude() + lngDifference(angle), dronePosition(path).latitude() + latDifference(angle));
 			new_point = checkBoundary(new_point, dronePosition(path));
+			
+			
+			
 			
 			
 			
