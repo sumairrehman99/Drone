@@ -33,18 +33,18 @@ public class Sensor {
 	
 	
 	// parses the sensor reading as a double
-	public double parseReadings(String reading){
-		try {
-			return Double.parseDouble(reading);
-		}
-		catch (NumberFormatException e) {			// An exception will be returned is if the reading is "null" or "NaN" since it isn't a number
-			return -1;								// -1 in this case means null or NaN
-		}
-	}
+ 	public double parseReadings(String reading){
+ 		try {
+ 			return Double.parseDouble(reading);
+ 		}
+ 		catch (NumberFormatException e) {			// An exception will be returned is if the reading is "null" or "NaN" since it isn't a number
+ 			return -1;								// -1 in this case means null or NaN
+ 		}
+ 	}
 	
 
 	
-	public static void drawSensors(double reading, double battery, String location, Feature f) {
+	public static void draw(double reading, double battery, String location, Feature f) {
     	if (battery < 10) {
     		f.addStringProperty("location", location);
     		f.addStringProperty("rgb-string", "#000000");

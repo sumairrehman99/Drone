@@ -13,6 +13,10 @@ import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
+import com.mapbox.turf.TurfJoins;
+import com.mapbox.turf.TurfMisc;
+import com.mapbox.turf.models.LineIntersectsResult;
+import com.mapbox.turf.models.LineIntersectsResult.Builder;
 
 
 
@@ -23,8 +27,7 @@ public class App
 	private static ArrayList<Point> visited_sensors = new ArrayList<>();		// stroes all the coordinates of the sensors the drone has already visited
 	private static ArrayList<Point> current_path = new ArrayList<>();			// stores all the points the drone has travelled so far
 	private static ArrayList<Integer> angles = new ArrayList<>();				// stores all the angles that the drone moves
-	private static ArrayList<Geometry> geometry_list = new ArrayList<>();		// stores the geometries of the sensors and the flight path
-    private static ArrayList<Feature> feature_list = new ArrayList<>();
+	
 	
     public static void main( String[] args ) throws IOException, InterruptedException
     {
@@ -57,10 +60,12 @@ public class App
 
         
     
-             
+        var geometry_list = new ArrayList<Geometry>();		// stores the geometries of the sensors and the flight path
+        var feature_list = new ArrayList<Feature>();		
         
         
         // plotting the sensors on the map
+        
        var sensor_positions = data.getSensorCoordinates();
         
         for (int x = 0; x < sensor_positions.size(); x++) {
@@ -72,14 +77,12 @@ public class App
         current_path.add(Point.fromLngLat(starting_longitude, starting_latitude));
         
         
-        new Path(sensor_positions, current_path, angles, data);
+        new Path(current_path, angles, data);
 
         
         LineString flight_path = Path.buildPath(visited_sensors);
-        
-       	
-        
-        
+             
+         
         
         System.out.println(Path.getMoves());
         System.out.println(Path.getSensors(visited_sensors));
@@ -87,8 +90,9 @@ public class App
         LineString boundary = LineString.fromLngLats(line_points);
         geometry_list.add((Geometry) flight_path);
         geometry_list.add((Geometry) boundary);
+
         
-        
+        //converting the geometries into features and adding them to feature_list
         for (int y = 0; y < geometry_list.size(); y++) {
         	feature_list.add(Feature.fromGeometry(geometry_list.get(y)));
         }
