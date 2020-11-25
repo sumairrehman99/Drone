@@ -37,8 +37,6 @@ public class App
         var year = args[2];
         var starting_latitude = Double.parseDouble(args[3]);
         var starting_longitude = Double.parseDouble(args[4]);
-       
-
         
         var line_points = new ArrayList<Point>();
         line_points.add(Point.fromLngLat(-3.192473, 55.946233));
@@ -66,6 +64,7 @@ public class App
         
         // plotting the sensors on the map
         
+       // this list stores the location of each sensor as a Point 
        var sensor_positions = data.getSensorCoordinates();
         
         for (int x = 0; x < sensor_positions.size(); x++) {
@@ -73,7 +72,7 @@ public class App
         }
         
 
-        // adding the starting position to the route
+        // adding the starting point to the current path
         current_path.add(Point.fromLngLat(starting_longitude, starting_latitude));
         
         
@@ -82,7 +81,7 @@ public class App
         
         LineString flight_path = Path.buildPath(visited_sensors);
              
-         
+        
         
         System.out.println(Path.getMoves());
         System.out.println(Path.getSensors(visited_sensors));

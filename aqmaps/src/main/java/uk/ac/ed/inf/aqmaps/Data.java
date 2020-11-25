@@ -23,8 +23,10 @@ public class Data {
 	
 	public Data(String day, String month, String year) throws IOException, InterruptedException {
 		
+		// Building a request to get the data for the given day, month and year
 		var data_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/maps/" + year + "/" + month + "/" + day + "/air-quality-data.json")).build();
-        var data_response = CLIENT.send(data_request, BodyHandlers.ofString());
+        
+		var data_response = CLIENT.send(data_request, BodyHandlers.ofString());
         
         Type mapsType = new TypeToken<ArrayList<Maps>>() {}.getType();
         
@@ -34,7 +36,7 @@ public class Data {
         sensor_details = new ArrayList<Sensor>();
         
         for (int i = 0; i < data_list.size(); i++) {
-        	sensor_details.add(new Sensor(data_list.get(i).location, data_list.get(i).reading, data_list.get(i).battery));
+        	sensor_details.add(new Sensor(data_list.get(i).getLocation(), data_list.get(i).getReading(), data_list.get(i).getBattery()));
         }
         
         
@@ -42,19 +44,11 @@ public class Data {
 	
 	
 	
-	// this method returns the list of sensors that are to visited on that day
-	private ArrayList<Sensor> getSensorDetails(){
-		return sensor_details;
-	}
-	
-	
-	
 	 // this method parses each sensor reading as a double and returns them in a list
-	private ArrayList<Double> getSensorReadings(){
+	private ArrayList<Double> parseSensorReadings(){
 		ArrayList<Double> readings  = new ArrayList<>();
-		var sensors = getSensorDetails();
-		for (int i = 0; i < sensors.size(); i++) {
-        	readings.add(sensors.get(i).parseReadings(sensors.get(i).getReading()));
+		for (int i = 0; i < sensor_details.size(); i++) {
+        	readings.add(sensor_details.get(i).parseReadings(sensor_details.get(i).getReading()));
         }
 		return readings;
 	}
@@ -62,11 +56,11 @@ public class Data {
 	
 	// drawing the sensors on the map
     public void drawSensors(ArrayList<Feature> feature_list) {
-    	var sensors = getSensorDetails();
-    	var readings = getSensorReadings();
-    	for (int i = 0; i < sensors.size(); i++) {
-    		sensors.get(i);
-    		Sensor.draw(readings.get(i), sensor_details.get(i).getBattery(), sensor_details.get(i).getLocation(), feature_list.get(i));
+    	// this list contains the readings of each sensor in sensor_details parsed as doubles
+    	var readings_list = parseSensorReadings();
+    	
+    	for (int i = 0; i < sensor_details.size(); i++) {
+    		Sensor.draw(readings_list.get(i), sensor_details.get(i).getBattery(), sensor_details.get(i).getLocation(), feature_list.get(i));
     	}
     }
 	
@@ -109,15 +103,17 @@ public class Data {
     // this method returns the coordinates of the each sensor as a (lng,lat) point
     public ArrayList<Point> getSensorCoordinates () throws IOException, InterruptedException{
     	 var details_list = getDetails();
-    	 var coordinates_list = new ArrayList<Coordinates>();	// stores the coordinates of all the sensors 
-         var sensor_positions = new ArrayList<Point>();			
+    	 var coordinates_list = new ArrayList<Coordinates>();	// stores the coordinates of all the sensors as Coordinates
+         var sensor_positions = new ArrayList<Point>();			// stores the coordinates of all the sensors as Points	
           
          
+         // storing the coordinates of all the sensors to be visited
          for (int i = 0; i < details_list.size(); i++){
          	var words = new Gson().fromJson(details_list.get(i).body(), Words.class);
          	coordinates_list.add(new Coordinates(words.coordinates.lng, words.coordinates.lat));
          }
          
+         // converting the Coordinates objects to Points and storing them in sensor_positions
          for (int p = 0; p < coordinates_list.size(); p++) {
          	sensor_positions.add(Point.fromLngLat(coordinates_list.get(p).getLongitude(), coordinates_list.get(p).getLatitude()));
          }

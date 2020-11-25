@@ -4,11 +4,11 @@ import uk.ac.ed.inf.aqmaps.Words.Square.Northeast;
 import uk.ac.ed.inf.aqmaps.Words.Square.Southwest;
 
 public class Words {
-	public String country;
-	public String nearestPlace;
-	public String words;
-	public String language;
-	public String map;
+	private String country;
+	private String nearestPlace;
+	private String words;
+	private String language;
+	private String map;
 	
 	
 	public Words(String country, String nearestPlace, String words, String language, String map) {
@@ -41,4 +41,24 @@ public class Words {
 	Northeast northeast;
 	Coordinates coordinates;
 
+	public String getCountry() {
+		return country;
+	}
+	
+	public String nearestPlace() {
+		return nearestPlace;
+	}
+	
+	public String words() {
+		return words;
+	}
+	
+	public String getLanguage() {
+		return language;
+	}
+	
+	public String getMap() {
+		return map;
+	}
+	
 }
