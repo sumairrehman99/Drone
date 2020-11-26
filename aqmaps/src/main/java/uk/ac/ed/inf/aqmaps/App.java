@@ -1,4 +1,4 @@
-  
+   
 package uk.ac.ed.inf.aqmaps;
 
 import java.io.IOException;
@@ -55,23 +55,9 @@ public class App
         
         
         Data data = new Data(day, month, year);
-
+        var list_of_sensors = data.getSensors();
+        		
         
-    
-        var geometry_list = new ArrayList<Geometry>();		// stores the geometries of the sensors and the flight path
-        var feature_list = new ArrayList<Feature>();		
-        
-        
-        // plotting the sensors on the map
-        
-       // this list stores the location of each sensor as a Point 
-       var sensor_positions = data.getSensorCoordinates();
-        
-        for (int x = 0; x < sensor_positions.size(); x++) {
-        	geometry_list.add((Geometry) sensor_positions.get(x));
-        }
-        
-
         // adding the starting point to the current path
         current_path.add(Point.fromLngLat(starting_longitude, starting_latitude));
         
@@ -79,15 +65,19 @@ public class App
         new Path(current_path, angles, data);
 
         
-        LineString flight_path = Path.buildPath(visited_sensors);
-             
-        
-        
+        Path.buildPath(visited_sensors, list_of_sensors);
+           
+
         System.out.println(Path.getMoves());
         System.out.println(Path.getSensors(visited_sensors));
         
+        // delete this list when submitting
+        var geometry_list = Path.getGeometry();
+        
+        var feature_list = Path.getFeatures();
+        
         LineString boundary = LineString.fromLngLats(line_points);
-        geometry_list.add((Geometry) flight_path);
+        
         geometry_list.add((Geometry) boundary);
 
         
@@ -96,7 +86,6 @@ public class App
         	feature_list.add(Feature.fromGeometry(geometry_list.get(y)));
         }
         
-        data.drawSensors(feature_list);
 
         FeatureCollection collection = FeatureCollection.fromFeatures(feature_list);
         
@@ -108,7 +97,5 @@ public class App
 
 
 }
-
-
 
 

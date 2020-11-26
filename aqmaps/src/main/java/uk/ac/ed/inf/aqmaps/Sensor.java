@@ -1,11 +1,18 @@
 package uk.ac.ed.inf.aqmaps;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
 
+import com.google.gson.Gson;
 import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.Point;
 
 public class Sensor {
-
+	private static final HttpClient CLIENT = HttpClient.newHttpClient();
 	private String location;
 	private String reading;
 	private double battery;
@@ -33,7 +40,9 @@ public class Sensor {
 	
 	
 	// parses the sensor reading as a double
- 	public double parseReadings(String reading){
+ 	public double parseReadings(){
+ 		var reading = getReading();
+
  		try {
  			return Double.parseDouble(reading);
  		}
@@ -43,76 +52,93 @@ public class Sensor {
  	}
 	
 
+ 	// returns the coordinates of a sensor using its What3Words location
+ 	public Point getCoordinates() throws IOException, InterruptedException {
+ 		String location = getLocation();
+ 		String [] split_location = location.split("\\.");
+ 		
+ 		var server_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + split_location[0] + "/" + split_location[1] + "/" + split_location[2] + "/details.json")).build();
+ 		var server_response = CLIENT.send(server_request, BodyHandlers.ofString());
+ 		
+ 		var words = new Gson().fromJson(server_response.body(), Words.class);
+ 		
+ 		Point sensor_point = Point.fromLngLat(words.coordinates.lng, words.coordinates.lat);
+ 		return sensor_point;
+ 
+ 	}
+ 	
+ 	
+ 	
 	
-	public static void draw(double reading, double battery, String location, Feature f) {
+	public static Feature draw(double reading, double battery, String location, Feature sensor_feature) {
     	if (battery < 10) {
-    		f.addStringProperty("location", location);
-    		f.addStringProperty("rgb-string", "#000000");
-	  		f.addStringProperty("marker-color", "#000000");
-	  		f.addStringProperty("marker-symbol", "cross");
+    		sensor_feature.addStringProperty("location", location);
+    		sensor_feature.addStringProperty("rgb-string", "#000000");
+	  		sensor_feature.addStringProperty("marker-color", "#000000");
+	  		sensor_feature.addStringProperty("marker-symbol", "cross");
     	}
 		if (reading == -1) {
-			f.addStringProperty("location", location);
-	  		f.addStringProperty("rgb-string", "#000000");
-	  		f.addStringProperty("marker-color", "#000000");
-	  		f.addStringProperty("marker-symbol", "cross");
+			sensor_feature.addStringProperty("location", location);
+	  		sensor_feature.addStringProperty("rgb-string", "#000000");
+	  		sensor_feature.addStringProperty("marker-color", "#000000");
+	  		sensor_feature.addStringProperty("marker-symbol", "cross");
 		}
 		
 		if (reading >= 0 && reading < 32) {
-			f.addStringProperty("location", location);
-			f.addStringProperty("rgb-string", "#00ff00");
-    		f.addStringProperty("marker-color", "#00ff00");
-    		f.addStringProperty("marker-symbol", "lighthouse");
+			sensor_feature.addStringProperty("location", location);
+			sensor_feature.addStringProperty("rgb-string", "#00ff00");
+    		sensor_feature.addStringProperty("marker-color", "#00ff00");
+    		sensor_feature.addStringProperty("marker-symbol", "lighthouse");
 		}
 		
 		if (reading >= 32 && reading < 64) {
-			f.addStringProperty("location", location);
-			f.addStringProperty("rgb-string", "#40ff00");
-    		f.addStringProperty("marker-color", "#40ff00");
-    		f.addStringProperty("marker-symbol", "lighthouse");
+			sensor_feature.addStringProperty("location", location);
+			sensor_feature.addStringProperty("rgb-string", "#40ff00");
+    		sensor_feature.addStringProperty("marker-color", "#40ff00");
+    		sensor_feature.addStringProperty("marker-symbol", "lighthouse");
 		}
 		
 		if (reading >= 64 && reading < 96) {
-			f.addStringProperty("location", location);
-			f.addStringProperty("rgb-string", "#80ff00");
-    		f.addStringProperty("marker-color", "#80ff00");
-    		f.addStringProperty("marker-symbol", "lighthouse");
+			sensor_feature.addStringProperty("location", location);
+			sensor_feature.addStringProperty("rgb-string", "#80ff00");
+    		sensor_feature.addStringProperty("marker-color", "#80ff00");
+    		sensor_feature.addStringProperty("marker-symbol", "lighthouse");
 		}
 		
 		if (reading >= 96 && reading < 128) {
-			f.addStringProperty("location", location);
-			f.addStringProperty("rgb-string", "#c0ff00");
-    		f.addStringProperty("marker-color", "#c0ff00");
-    		f.addStringProperty("marker-symbol", "lighthouse");
+			sensor_feature.addStringProperty("location", location);
+			sensor_feature.addStringProperty("rgb-string", "#c0ff00");
+    		sensor_feature.addStringProperty("marker-color", "#c0ff00");
+    		sensor_feature.addStringProperty("marker-symbol", "lighthouse");
 		}
 
 		if (reading >= 128 && reading < 160) {
-			f.addStringProperty("location", location);
-    		f.addStringProperty("rgb-string", "#ffc000");
-    		f.addStringProperty("marker-color", "#ffc000");
-    		f.addStringProperty("marker-symbol", "danger");
+			sensor_feature.addStringProperty("location", location);
+    		sensor_feature.addStringProperty("rgb-string", "#ffc000");
+    		sensor_feature.addStringProperty("marker-color", "#ffc000");
+    		sensor_feature.addStringProperty("marker-symbol", "danger");
     	}
 		
 		if (reading >= 160 && reading < 192) {
-			f.addStringProperty("location", location);
-    		f.addStringProperty("rgb-string", "#ff8000");
-    		f.addStringProperty("marker-color", "#ff8000");
-    		f.addStringProperty("marker-symbol", "danger");
+			sensor_feature.addStringProperty("location", location);
+    		sensor_feature.addStringProperty("rgb-string", "#ff8000");
+    		sensor_feature.addStringProperty("marker-color", "#ff8000");
+    		sensor_feature.addStringProperty("marker-symbol", "danger");
 		}
 		
 		if (reading >= 192 && reading < 224) {
-			f.addStringProperty("location", location);
-    		f.addStringProperty("rgb-string", "#ff4000");
-    		f.addStringProperty("marker-color", "#ff4000");
-    		f.addStringProperty("marker-symbol", "danger");
+			sensor_feature.addStringProperty("location", location);
+    		sensor_feature.addStringProperty("rgb-string", "#ff4000");
+    		sensor_feature.addStringProperty("marker-color", "#ff4000");
+    		sensor_feature.addStringProperty("marker-symbol", "danger");
     	}
     	if (reading >= 224 && reading < 256) {
-    		f.addStringProperty("location", location);
-    		f.addStringProperty("rgb-string", "#ff0000");
-    		f.addStringProperty("marker-color", "#ff0000");
-    		f.addStringProperty("marker-symbol", "danger");
+    		sensor_feature.addStringProperty("location", location);
+    		sensor_feature.addStringProperty("rgb-string", "#ff0000");
+    		sensor_feature.addStringProperty("marker-color", "#ff0000");
+    		sensor_feature.addStringProperty("marker-symbol", "danger");
     	}
-
+    	return sensor_feature;
     }   
 
 }

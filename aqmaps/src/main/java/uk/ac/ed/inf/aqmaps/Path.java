@@ -23,43 +23,48 @@ import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
 
 public class Path extends App {
-
-	private static int move_counter = 0;
-	private static ArrayList<Point> current_path; 			// stores all the points the drone visits on its journey
-	private static ArrayList<Integer> angles;				// stores the angles that the drone moves
-	private static ArrayList<String> sensor_names;			// stores the names of the sensors in the order they are visited
-	private static Data data;
-	private static final HttpClient CLIENT = HttpClient.newHttpClient();
+	
 	private static final int MOVE_LIMIT = 150;
 	private static final int TOTAL_SENSORS = 33;
 	private static final double MAX_LONGITUDE = -3.184319;
 	private static final double MIN_LONGITUDE = -3.192473;
 	private static final double MAX_LATITUDE = 55.946233;
 	private static final double MIN_LATITUDE = 55.942617;
+	private static int move_counter = 0;
+	private static ArrayList<Point> current_path; 			// stores all the points the drone visits on its journey
+	private static ArrayList<Integer> angles;				// stores the angles that the drone moves
+	private static ArrayList<String> sensor_names = new ArrayList<>(TOTAL_SENSORS);			// stores the names of the sensors in the order they are visited
+	private static Data data;
+	private static ArrayList<Geometry> geometry_list = new ArrayList<>(TOTAL_SENSORS);	
+	private static ArrayList<Feature> features_list = new ArrayList<>(TOTAL_SENSORS);
+	private static final HttpClient CLIENT = HttpClient.newHttpClient();
+	
     
     
 
 
 	
-	public Path(ArrayList<Point> current_path, ArrayList<Integer> angles, Data data) {
+	public Path(ArrayList<Point> current_path, ArrayList<Integer> angles, Data data) throws IOException, InterruptedException {
 		Path.current_path = current_path;	
 		Path.angles = angles;
 		Path.data = data;
-		
-		sensor_names = data.getSensorNames();
+
 	}
 	
 	
 	
 	
 	
-	public static LineString buildPath(List<Point> visited_sensors) throws IOException, InterruptedException {
+	public static void buildPath(List<Point> visited_sensors, List<Sensor> list_of_sensors) throws IOException, InterruptedException {
+		
+		
 		// make sure to remove the parameter from this method when submitting
 		
+			
        //var visited_sensors = new ArrayList<Point>();     
-       var sensor_positions = data.getSensorCoordinates();			
-       var names = data.getSensorNames();       					// this list stores all the names of the sensors in the order that they are in sensor_positions
-       var no_flys = getNoFly();	
+		
+       var sensor_coordinates = new ArrayList<Point>();
+       var no_flys = data.getNoFly();	
        var no_fly_lines = new ArrayList<LineString>();
        final Point starting_point = current_path.get(0);
        
@@ -67,12 +72,19 @@ public class Path extends App {
     	   no_fly_lines.add(pol.outer());
        }
 		
-       // this list needs to be cleared since it already contains all the names of the sensors in order. 
-       sensor_names.clear();
+       
+       for (int i = 0; i < list_of_sensors.size(); i++) {
+    	   sensor_coordinates.add(list_of_sensors.get(i).getCoordinates());
+       }
+       
+       
+       
+       
+
 		
 		// flying to the sensors
 		while (visited_sensors.size() < TOTAL_SENSORS || move_counter < MOVE_LIMIT) {
-			Point next_sensor = closestSensor(sensor_positions, currentPosition(current_path), visited_sensors);
+			Point next_sensor = closestSensor(sensor_coordinates, currentPosition(current_path), visited_sensors);
 			
 			// if the first sensor is in range of the starting position of the drone
 			if (inRange(next_sensor, currentPosition(current_path)) && move_counter == 0) {
@@ -88,8 +100,11 @@ public class Path extends App {
 				double new_angle = nearestTen(findAngle(currentPosition(current_path), starting_point, sensorDirection(currentPosition(current_path), starting_point)));
 				angles.add((int)new_angle);
 				current_path.add(starting_point);
-				sensor_names.add(names.get(sensor_positions.indexOf(next_sensor)));
 				visited_sensors.add(next_sensor);
+				Sensor visited = list_of_sensors.get(sensor_coordinates.indexOf(next_sensor));
+				sensor_names.add(visited.getLocation());
+				Feature sensor_feature = Feature.fromGeometry((Geometry) next_sensor);
+				features_list.add(Sensor.draw(visited.parseReadings(), visited.getBattery(), visited.getLocation(), sensor_feature));
 				move_counter++;
 				continue;
 			}
@@ -109,8 +124,11 @@ public class Path extends App {
 
 			// if the sensor is in range of the drone, add it to visited_sensors and add the name to sensor_names
 			if (inRange(currentPosition(current_path), next_sensor)) {
-				sensor_names.add(names.get(sensor_positions.indexOf(next_sensor)));
 				visited_sensors.add(next_sensor);
+				Sensor visited = list_of_sensors.get(sensor_coordinates.indexOf(next_sensor));
+				sensor_names.add(visited.getLocation());
+				Feature sensor_feature = Feature.fromGeometry((Geometry) next_sensor);
+				features_list.add(Sensor.draw(visited.parseReadings(), visited.getBattery(), visited.getLocation(), sensor_feature));
 				move_counter++;
 			}
 			else {
@@ -146,43 +164,37 @@ public class Path extends App {
 
 		
 		LineString flight_path = LineString.fromLngLats(current_path);
-		
-		return flight_path;
+		features_list.add(Feature.fromGeometry((Geometry) flight_path));
+
 	}
+		
+	
 	
 	
 
+	
+	
+	
+	
+	public static ArrayList<Geometry> getGeometry() {
+		return geometry_list;
+	}
+	
+	public static ArrayList<Feature> getFeatures(){
+			
+		return features_list;
+	}
+	
+	
+	
+	
 		
 	public static ArrayList<Integer> getAngles() {
     	return angles;
     }
 	
 	
-	public static ArrayList<Polygon> getNoFly() throws IOException, InterruptedException {
-		
-		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
-        var no_fly_response = CLIENT.send(no_fly_request, BodyHandlers.ofString());
-        
-        FeatureCollection no_fly_collection = FeatureCollection.fromJson(no_fly_response.body());        
-        List<Feature> no_fly_list = no_fly_collection.features();
-        List<Geometry> no_fly_geometrys = new ArrayList<>();
-        
-        for (Feature f : no_fly_list) {
-        	no_fly_geometrys.add(f.geometry());
-        }
-        
-        
-        var no_fly_polygons = new ArrayList<Polygon>();
-        
-        for (Geometry g : no_fly_geometrys) {
-        	if (g instanceof Polygon) {
-        		no_fly_polygons.add((Polygon)g);
-        	}
-        }
-		
-		return no_fly_polygons;
-		
-	}
+	
 	
 	
 	
@@ -202,7 +214,7 @@ public class Path extends App {
 	// returns the closest sensor to the drone that hasn't been visited yet
 	private static Point closestSensor(List<Point> sensors, Point drone, List<Point> visitedSensors) {
     	
-    	Point closest = Point.fromLngLat(60, -4);
+    	Point closest = Point.fromLngLat(MAX_LONGITUDE + 100, MAX_LATITUDE + 100);
     	
     	for (Point sensor : sensors) {
     		if (getDistance(drone, sensor) <= getDistance(drone, closest) && !visitedSensors.contains(sensor)) {
