@@ -21,70 +21,78 @@ import com.mapbox.geojson.Polygon;
 public class Data {
 
 	private static final HttpClient CLIENT = HttpClient.newHttpClient();
-	private ArrayList<Maps> data_list;			 // this list stores the location, reading and battery percentage of each sensor
-	private ArrayList<Sensor> sensors;	 // this list stores the sensors to be visited for the day
-	private ArrayList<Polygon> no_fly = new ArrayList<>(4);
-	
-	
-	
-	
+	private ArrayList<Maps> data_list; // this list stores the location, reading and battery percentage of each sensor
+	private ArrayList<Sensor> sensors; // this list stores the sensors to be visited for the day
+	private ArrayList<Polygon> no_fly = new ArrayList<>(4); // this list stores the no_fly zones
+	private String day;
+	private String month;
+	private String year;
+
 	public Data(String day, String month, String year) throws IOException, InterruptedException {
-		
+		this.day = day;
+		this.month = month;
+		this.year = year;
+
 		// Building a request to get the data for the given day, month and year
-		var data_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/maps/" + year + "/" + month + "/" + day + "/air-quality-data.json")).build();
-        
+		var data_request = HttpRequest.newBuilder()
+				.uri(URI.create("http://localhost/maps/" + year + "/" + month + "/" + day + "/air-quality-data.json"))
+				.build();
+
 		var data_response = CLIENT.send(data_request, BodyHandlers.ofString());
-        
-        Type mapsType = new TypeToken<ArrayList<Maps>>() {}.getType();
-               
-        data_list = new Gson().fromJson(data_response.body(), mapsType);
+
+		Type mapsType = new TypeToken<ArrayList<Maps>>() {
+		}.getType();
+
+		data_list = new Gson().fromJson(data_response.body(), mapsType);
 
 	}
-	
-	
-	
-	
-	public ArrayList<Sensor> getSensors(){
+
+	public String getDay() {
+		return day;
+	}
+
+	public String getMonth() {
+		return month;
+	}
+
+	public String getYear() {
+		return year;
+	}
+
+	public ArrayList<Sensor> getSensors() {
 		sensors = new ArrayList<Sensor>();
-	        
-	        for (int i = 0; i < data_list.size(); i++) {
-	        	sensors.add(new Sensor(data_list.get(i).getLocation(), data_list.get(i).getReading(), data_list.get(i).getBattery()));
-	        }
+
+		for (int i = 0; i < data_list.size(); i++) {
+			sensors.add(new Sensor(data_list.get(i).getLocation(), data_list.get(i).getReading(),
+					data_list.get(i).getBattery()));
+		}
 		return sensors;
 	}
-	
-	
-	
+
 	public ArrayList<Polygon> getNoFly() throws IOException, InterruptedException {
-		
-		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson")).build();
-        var no_fly_response = CLIENT.send(no_fly_request, BodyHandlers.ofString());
-        
-        FeatureCollection no_fly_collection = FeatureCollection.fromJson(no_fly_response.body());        
-        List<Feature> no_fly_list = no_fly_collection.features();
-        List<Geometry> no_fly_geometrys = new ArrayList<>();
-        
-        for (Feature f : no_fly_list) {
-        	no_fly_geometrys.add(f.geometry());
-        }
-        
-        
-        
-        
-        for (Geometry g : no_fly_geometrys) {
-        	if (g instanceof Polygon) {
-        		no_fly.add((Polygon)g);
-        	}
-        }
-		
+
+		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson"))
+				.build();
+		var no_fly_response = CLIENT.send(no_fly_request, BodyHandlers.ofString());
+
+		FeatureCollection no_fly_collection = FeatureCollection.fromJson(no_fly_response.body());
+		List<Feature> no_fly_list = no_fly_collection.features();
+		List<Geometry> no_fly_geometrys = new ArrayList<>();
+
+		for (Feature f : no_fly_list) {
+			no_fly_geometrys.add(f.geometry());
+		}
+
+		for (Geometry g : no_fly_geometrys) {
+			if (g instanceof Polygon) {
+				no_fly.add((Polygon) g);
+			}
+		}
+
 		return no_fly;
-		
+
 	}
-	
 
-
-	
-	
 //	 // this method parses each sensor reading as a double and returns them in a list
 //	private ArrayList<Double> parseSensorReadings(){
 //		ArrayList<Double> readings  = new ArrayList<>();
@@ -93,11 +101,8 @@ public class Data {
 //        }
 //		return readings;
 //	}
-	
-	
 
-    
-    // this method returns the details of a What3Words location
+	// this method returns the details of a What3Words location
 //    public ArrayList<HttpResponse<String>> getDetails() throws IOException, InterruptedException{
 //    	var split_locations = new ArrayList<String[]>();
 //    	
@@ -118,13 +123,8 @@ public class Data {
 //      }
 //      return details_list;
 //    }
-	
-    
-    
-    
-    
-    
-    // this method gets the What3Words names of all the sensors
+
+	// this method gets the What3Words names of all the sensors
 //    public ArrayList<String> getSensorNames(){
 //    	var names = new ArrayList<String>();
 //    	
@@ -134,9 +134,8 @@ public class Data {
 //    	return names;
 //    	
 //    }
-    
-    
-    // this method returns the coordinates of the each sensor as a (lng,lat) point
+
+	// this method returns the coordinates of the each sensor as a (lng,lat) point
 //    public ArrayList<Point> getSensorCoordinates () throws IOException, InterruptedException{
 //    	 var details_list = getDetails();
 //    	 var coordinates_list = new ArrayList<Coordinates>();	// stores the coordinates of all the sensors as Coordinates
@@ -157,11 +156,6 @@ public class Data {
 //         return sensor_positions;
 //         
 //    }
-    
- 
-    
-}
 
-	
-	
+}
 	
