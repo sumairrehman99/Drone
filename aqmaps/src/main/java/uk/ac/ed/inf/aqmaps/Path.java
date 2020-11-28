@@ -32,16 +32,16 @@ public class Path {
 	private static final double MIN_LATITUDE = 55.942617;
 
 	private static int move_counter = 0; // keeps track of the number of moves made by the drone
-	private ArrayList<Point> current_path;
-	private static ArrayList<String> sensor_names = new ArrayList<>(TOTAL_SENSORS); // stores the names of the sensors
-																					// in the order they are visited
-	private static ArrayList<Integer> angles = new ArrayList<>(MOVE_LIMIT); // stores the angles that the drone moves
+	private ArrayList<Point> current_path = new ArrayList<>(MOVE_LIMIT);		// consists of all the points that make up the flight path
+	private static ArrayList<String> sensor_names = new ArrayList<>(TOTAL_SENSORS); // the names of the visited sensors
+	private static ArrayList<Integer> angles = new ArrayList<>(MOVE_LIMIT); // stores the angles that the drone moves on
 	private Data data;
+	private Point starting_point; 			// the starting point of the drone
 	private ArrayList<Geometry> geometry_list = new ArrayList<>(TOTAL_SENSORS);
 	private static ArrayList<Feature> features_list = new ArrayList<>(TOTAL_SENSORS);
 
-	public Path(ArrayList<Point> current_path, Data data) throws IOException, InterruptedException {
-		this.current_path = current_path;
+	public Path(Point starting_point, Data data) throws IOException, InterruptedException {
+		this.starting_point = starting_point;
 		this.data = data;
 	}
 
@@ -53,7 +53,7 @@ public class Path {
 		var sensor_coordinates = new ArrayList<Point>();			// the (lng,lat) coordinates of all the sensors
 		@SuppressWarnings("unused")
 		var no_flys = data.getNoFly();								// Fetching the no fly zones from the web server
-		final Point starting_point = current_path.get(0);			// the starting position of the drone
+		current_path.add(starting_point);							// the starting position of the drone
 
 		for (int i = 0; i < list_of_sensors.size(); i++) {
 			sensor_coordinates.add(list_of_sensors.get(i).getCoordinates());
@@ -70,6 +70,7 @@ public class Path {
 
 		// flying to the sensors
 		while (visited_sensors.size() < TOTAL_SENSORS || move_counter < MOVE_LIMIT) {
+			
 			// the "target" sensor. This is the sensor the drone will fly to.
 			Point target_sensor = closestSensor(sensor_coordinates, currentPosition(current_path), visited_sensors);
 
@@ -94,7 +95,7 @@ public class Path {
 				Sensor visited = list_of_sensors.get(sensor_coordinates.indexOf(target_sensor)); // the sensor that was just visited
 				sensor_names.add(visited.getLocation()); // getting the visited sensor's name
 				Feature sensor_feature = Feature.fromGeometry((Geometry) target_sensor); // converting it to a Feature
-				features_list.set(features_list.indexOf(sensor_feature), drawSensor(visited)); // replacing the sensor
+				features_list.set(features_list.indexOf(sensor_feature), drawSensor(visited)); // replacing the visited sensor
 																								// in features_list with
 																								// a marked version
 				move_counter++;

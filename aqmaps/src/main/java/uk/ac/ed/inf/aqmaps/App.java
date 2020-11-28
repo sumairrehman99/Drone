@@ -25,10 +25,7 @@ import com.mapbox.turf.models.LineIntersectsResult.Builder;
 public class App 
 {
 	
-	private static ArrayList<Point> current_path = new ArrayList<>();			// stores all the points the drone has travelled so far
-	
-	
-    public static void main( String[] args ) throws IOException, InterruptedException
+    public static void main( String[] args ) throws IOException, InterruptedException 
     {
        
     	var day = args[0];
@@ -52,12 +49,12 @@ public class App
         
         lines_list.add(line_points);
         
-        current_path.add(starting_point);
+        
         
         Data data = new Data(day, month, year);
         
         
-        Path path = new Path(current_path, data);
+        Path path = new Path(starting_point, data);
 
         
         path.buildPath();
