@@ -50,10 +50,10 @@ public class Path {
 
 		var list_of_sensors = data.getSensors();					// the sensors that are to be read
 		var visited_sensors = new ArrayList<Point>();				// the sensors that are already visited
-		var sensor_coordinates = new ArrayList<Point>();			// the coordinates of all the sensors
+		var sensor_coordinates = new ArrayList<Point>();			// the (lng,lat) coordinates of all the sensors
 		@SuppressWarnings("unused")
 		var no_flys = data.getNoFly();								// Fetching the no fly zones from the web server
-		final Point starting_point = current_path.get(0);
+		final Point starting_point = current_path.get(0);			// the starting position of the drone
 
 		for (int i = 0; i < list_of_sensors.size(); i++) {
 			sensor_coordinates.add(list_of_sensors.get(i).getCoordinates());
@@ -63,17 +63,18 @@ public class Path {
 			geometry_list.add((Geometry) sensor_coordinates.get(i));
 		}
 
-		// this will plot all the sensors on the map
+		// adding all the sensors to features_list
 		for (int i = 0; i < geometry_list.size(); i++) {
 			features_list.add(Feature.fromGeometry(geometry_list.get(i)));
 		}
 
 		// flying to the sensors
 		while (visited_sensors.size() < TOTAL_SENSORS || move_counter < MOVE_LIMIT) {
-			Point next_sensor = closestSensor(sensor_coordinates, currentPosition(current_path), visited_sensors);
+			// the "target" sensor. This is the sensor the drone will fly to.
+			Point target_sensor = closestSensor(sensor_coordinates, currentPosition(current_path), visited_sensors);
 
 			// if the first sensor is in range of the starting position of the drone
-			if (inRange(next_sensor, currentPosition(current_path)) && move_counter == 0) {
+			if (inRange(target_sensor, currentPosition(current_path)) && move_counter == 0) {
 
 				// move to a arbitrary location 90 degrees north. This is counted as a move.
 				angles.add(90);
@@ -83,17 +84,16 @@ public class Path {
 				sensor_names.add(null);
 				move_counter++;
 
-				// return to the starting location. The drone is now in range to take a reading,
+				// return to the starting location. The drone is now in range to take a reading
 				// after having made a move.
 				double new_angle = nearestTen(findAngle(currentPosition(current_path), starting_point,
-						sensorDirection(currentPosition(current_path), starting_point)));
+						flightDirection(currentPosition(current_path), starting_point)));
 				angles.add((int) new_angle);
 				current_path.add(starting_point);
-				visited_sensors.add(next_sensor);
-				Sensor visited = list_of_sensors.get(sensor_coordinates.indexOf(next_sensor)); // getting the sensor
-																								// that was visited
+				visited_sensors.add(target_sensor);
+				Sensor visited = list_of_sensors.get(sensor_coordinates.indexOf(target_sensor)); // the sensor that was just visited
 				sensor_names.add(visited.getLocation()); // getting the visited sensor's name
-				Feature sensor_feature = Feature.fromGeometry((Geometry) next_sensor); // converting it to a Feature
+				Feature sensor_feature = Feature.fromGeometry((Geometry) target_sensor); // converting it to a Feature
 				features_list.set(features_list.indexOf(sensor_feature), drawSensor(visited)); // replacing the sensor
 																								// in features_list with
 																								// a marked version
@@ -102,24 +102,32 @@ public class Path {
 			}
 
 			// if the first sensor isn't in range of the drone's starting point
-
-			double angle = nearestTen(findAngle(currentPosition(current_path), next_sensor,
-					sensorDirection(currentPosition(current_path), next_sensor)));
-			angles.add((int) angle);
+			
+			// calculating the angle at which the drone will move on its next move
+			double angle = nearestTen(findAngle(currentPosition(current_path), target_sensor,
+					flightDirection(currentPosition(current_path), target_sensor)));
 			Point new_point = Point.fromLngLat(currentPosition(current_path).longitude() + lngDifference(angle),
 					currentPosition(current_path).latitude() + latDifference(angle));
-			new_point = checkBoundary(new_point, currentPosition(current_path));
-
+			
+			// checking if new calculated point lies within the confinement boundary
+			// if not, alter its angle
+			if(outOfBounds(new_point)) {
+				angle = checkBoundary(currentPosition(current_path), new_point);
+				new_point = Point.fromLngLat(currentPosition(current_path).longitude() + lngDifference(angle),
+						currentPosition(current_path).latitude() + latDifference(angle));
+			}
+			angles.add((int) angle);
 			current_path.add(new_point);
 
-			// if the sensor is in range of the drone, add it to visited_sensors and add the
-			// name to sensor_names
-			if (inRange(currentPosition(current_path), next_sensor)) {
-				visited_sensors.add(next_sensor);
-				Sensor visited = list_of_sensors.get(sensor_coordinates.indexOf(next_sensor)); // getting the sensor
+			// if the sensor is in range of the drone, add it to visited_sensors 
+			// add the name to sensor_names
+			// mark the sensor
+			if (inRange(currentPosition(current_path), target_sensor)) {
+				visited_sensors.add(target_sensor);
+				Sensor visited = list_of_sensors.get(sensor_coordinates.indexOf(target_sensor)); // getting the sensor
 																								// that was visited
 				sensor_names.add(visited.getLocation()); // getting the visited sensor's name
-				Feature sensor_feature = Feature.fromGeometry((Geometry) next_sensor); // converting it to a Feature
+				Feature sensor_feature = Feature.fromGeometry((Geometry) target_sensor); // converting it to a Feature
 				features_list.set(features_list.indexOf(sensor_feature), drawSensor(visited)); // replacing the sensor
 																								// in features_list with
 																								// a marked version
@@ -139,22 +147,23 @@ public class Path {
 		// returning to the starting position
 		while (move_counter < MOVE_LIMIT) {
 			double angle = findAngle(currentPosition(current_path), starting_point,
-					sensorDirection(currentPosition(current_path), starting_point));
-			angles.add((int) angle);
+					flightDirection(currentPosition(current_path), starting_point));		
 			Point new_point = Point.fromLngLat(currentPosition(current_path).longitude() + lngDifference(angle),
 					currentPosition(current_path).latitude() + latDifference(angle));
 
-			// once the drone is close enough to the starting position, stop
-			if (getDistance(starting_point, currentPosition(current_path)) < 0.0003) {
+			// if the drone is close enough to the starting position, stop
+			if (getDistance(starting_point, currentPosition(current_path)) < 0.0002) {
 				break;
 			}
-
+			angles.add((int) angle);
 			current_path.add(new_point);
 			sensor_names.add(null);
 			move_counter++;
 		}
 
+		// making the flight path of the drone from the Points in current_path
 		LineString flight_path = LineString.fromLngLats(current_path);
+		
 		features_list.add(Feature.fromGeometry((Geometry) flight_path));
 
 	}
@@ -175,6 +184,7 @@ public class Path {
 			FileWriter fw = new FileWriter("readings-" + day + "-" + month + "-" + year + ".geojson");
 			PrintWriter pw = new PrintWriter(fw);
 
+			// converting the FeatureCollection to a JSON file
 			pw.println(collection.toJson());
 			pw.close();
 
@@ -211,8 +221,10 @@ public class Path {
 	// this method takes a sensor and returns a marked Feature version of it
 	// according to it's reading, battery and location
 	private static Feature drawSensor(Sensor sensor) throws IOException, InterruptedException {
+		// converting the Sensor object to a Feature
 		Feature sensor_feature = Feature.fromGeometry((Geometry) sensor.getCoordinates());
 
+		// drawing the sensor
 		Sensor.draw(sensor.parseReading(), sensor.getBattery(), sensor.getLocation(), sensor_feature);
 
 		return sensor_feature;
@@ -233,12 +245,14 @@ public class Path {
 	}
 
 	// returns the closest sensor to the drone that hasn't been visited yet
-	private static Point closestSensor(List<Point> sensors, Point drone, List<Point> visitedSensors) {
-
+	private static Point closestSensor(List<Point> sensors, Point drone, List<Point> visited_sensors) {
+		
+		// An arbitrary Point. This will always be outside the drone confinement area.
 		Point closest = Point.fromLngLat(MAX_LONGITUDE + 100, MAX_LATITUDE + 100);
 
 		for (Point sensor : sensors) {
-			if (getDistance(drone, sensor) <= getDistance(drone, closest) && !visitedSensors.contains(sensor)) {
+			// finding the closest sensor that isn't in visited_sensors
+			if (getDistance(drone, sensor) <= getDistance(drone, closest) && !visited_sensors.contains(sensor)) {
 				closest = sensor;
 			}
 
@@ -248,19 +262,22 @@ public class Path {
 	}
 
 	// returns the drone's current position
+	// This is basically the last added Point in the current_path list
 	private static Point currentPosition(List<Point> path) {
 		return path.get(path.size() - 1);
 	}
 
-	// rounds the number to the nearest ten. 48 is rounded up to 50. 43 is rounded
-	// down to 40.
+	// rounds the number to the nearest ten. 48 is rounded up to 50. 
+	// 43 is rounded down to 40.
 	private static double nearestTen(double number) {
 		return ((Math.round(number + 5) / 10) * 10);
 	}
 
 	// returns the longitude difference when drone is flying at angle
 	private static double lngDifference(double angle) {
-
+		
+		// this is the difference in longitude that will be caused
+		// by the drone moving at the given angle
 		double difference = Math.cos(Math.toRadians(angle)) * 0.0003;
 
 		return difference;
@@ -268,6 +285,9 @@ public class Path {
 
 	// returns the latitude difference when drone is flying at angle
 	private static double latDifference(double angle) {
+		
+		// this is the difference in latitude that will be caused
+		// by the drone moving at the given angle
 		double difference = Math.sin(Math.toRadians(angle)) * 0.0003;
 
 		return difference;
@@ -282,39 +302,44 @@ public class Path {
 		}
 	}
 
-	// gives the direction of the sensor with respect to the drone (north-west,
-	// south-east,.... etc.)
-	private static String sensorDirection(Point drone, Point sensor) {
+	// this method return the direction the drone is flying
+	// (north-east, south-west, ..., etc.)
+	private static String flightDirection(Point from, Point to) {
 		String direction = "";
-		if (sensor.latitude() > drone.latitude() && sensor.longitude() > drone.longitude()) {
+		if (to.latitude() > from.latitude() && to.longitude() > from.longitude()) {
 			direction = "north-east";
-		} else if (sensor.latitude() > drone.latitude() && sensor.longitude() < drone.longitude()) {
+		} else if (to.latitude() > from.latitude() && to.longitude() < from.longitude()) {
 			direction = "north-west";
-		} else if (sensor.latitude() < drone.latitude() && sensor.longitude() > drone.longitude()) {
+		} else if (to.latitude() < from.latitude() && to.longitude() > from.longitude()) {
 			direction = "south-east";
-		} else if (sensor.latitude() < drone.latitude() && sensor.longitude() < drone.longitude()) {
+		} else if (to.latitude() < from.latitude() && to.longitude() < from.longitude()) {
 			direction = "south-west";
-		} else if (sensor.latitude() == drone.latitude() && sensor.longitude() < drone.longitude()) {
+		} else if (to.latitude() == from.latitude() && to.longitude() < from.longitude()) {
 			direction = "west";
-		} else if (sensor.latitude() == drone.latitude() && sensor.longitude() > drone.longitude()) {
+		} else if (to.latitude() == from.latitude() && to.longitude() > from.longitude()) {
 			direction = "east";
-		} else if (sensor.latitude() < drone.latitude() && sensor.longitude() == drone.longitude()) {
+		} else if (to.latitude() < from.latitude() && to.longitude() == from.longitude()) {
 			direction = "south";
-		} else if (sensor.latitude() > drone.latitude() && sensor.longitude() == drone.longitude()) {
+		} else if (to.latitude() > from.latitude() && to.longitude() == from.longitude()) {
 			direction = "north";
 		}
 		return direction;
 	}
 
-	// calculates the angle the drone will have to fly to reach the sensor
-	private static double findAngle(Point drone, Point sensor, String direction) {
-		double lng_difference = Math.abs(sensor.longitude() - drone.longitude());
-		double lat_difference = Math.abs(sensor.latitude() - drone.latitude());
-		double basic_angle = 0;
+	// calculates the angle the drone will have to fly to reach the target point
+	private static double findAngle(Point drone, Point target_point, String direction) {
+		double lng_difference = Math.abs(target_point.longitude() - drone.longitude());		// the longtiude difference b/w the drone and the target
+		double lat_difference = Math.abs(target_point.latitude() - drone.latitude());		// the latitude difference b/w the drone and the target
+		
+		double basic_angle = 0;				// the angle the horizantal makes with the hypotenuse in a right-angle triangle
+											// where the hypotenuse is 0.0003 i.e the length of each move the drone makes
+		
 		double angle = 0;
 
 		basic_angle = nearestTen(Math.toDegrees(Math.atan(lat_difference / lng_difference)));
 
+		
+		// the angle is calculated using the 360 degree ASTC graph
 		switch (direction) {
 		case "north-east":
 			angle = basic_angle;
@@ -342,6 +367,8 @@ public class Path {
 			break;
 		}
 
+		// Since the drone moves at angles between 0 and 350
+		// moving at 360 is the same as moving at 0
 		if (angle == 360) {
 			angle = 0;
 		}
@@ -349,46 +376,64 @@ public class Path {
 		return angle;
 
 	}
-
-	// checks if the drone is within the boundary. If it is crossing it, it alters
-	// the path
-	private static Point checkBoundary(Point new_point, Point drone) {
-		// if the drone is about to cross the right boundary
-		if (new_point.longitude() >= MAX_LONGITUDE) {
-			new_point = Point.fromLngLat(drone.longitude() + lngDifference(90), drone.latitude() + latDifference(90));
+	
+	
+	// this method checks if the drone is outside the confinement area
+	private boolean outOfBounds(Point new_point) {
+		boolean out = false;
+		if (new_point.longitude() >= MAX_LONGITUDE || new_point.longitude() <= MIN_LONGITUDE) {
+			out = true;
 		}
-
-		// if the drone is about to cross the bottom boundary and is flying in a
-		// south-east direction
-		if (new_point.latitude() <= MIN_LATITUDE && drone.longitude() <= new_point.longitude()) {
-			new_point = Point.fromLngLat(drone.longitude() + lngDifference(0), drone.latitude() + latDifference(0));
+		if (new_point.latitude() >= MAX_LATITUDE || new_point.latitude() <= MIN_LATITUDE) {
+			out = true;
 		}
+		return out;
+	}
+	
+	
+	
+	
 
-		// if the drone is about to cross the bottom boundary and is flying in a
-		// south-west direction
-		if (new_point.latitude() <= MIN_LATITUDE && drone.longitude() >= new_point.longitude()) {
-			new_point = Point.fromLngLat(drone.longitude() + lngDifference(0), drone.latitude() + latDifference(0));
+	// this method alters the angle the drone is travelling on
+	// based on the direction in which it crosses the boundary
+	private double checkBoundary(Point drone, Point new_point) {
+		double new_angle = 0;
+		
+		// if the drone is about to cross the right boundary and is flying south-east
+		if (new_point.longitude() >= MAX_LONGITUDE && flightDirection(drone, new_point) == "south-east") {
+			new_angle = 270;
 		}
-
-		// if the drone is about the top boundary and is flying in a north-east
-		// direction
-		if (new_point.latitude() >= MAX_LATITUDE && drone.longitude() >= new_point.longitude()) {
-			new_point = Point.fromLngLat(drone.longitude() + lngDifference(180), drone.latitude() + latDifference(180));
+		// if the drone is about to cross the right boundary and is flying north-east
+		if (new_point.longitude() >= MAX_LONGITUDE && flightDirection(drone, new_point) == "north-east") {
+			new_angle = 90;
 		}
-
-		// if the drone is about the top boundary and is flying in a north-west
-		// direction
-		if (new_point.latitude() >= MAX_LATITUDE && drone.longitude() < new_point.longitude()) {
-			new_point = Point.fromLngLat(drone.longitude() + lngDifference(0), drone.latitude() + latDifference(0));
+		
+		// if the drone is about to cross the top boundary and is flying north/north-west
+		if (new_point.latitude() >= MAX_LATITUDE && ((flightDirection(drone, new_point) == "north"
+				|| flightDirection(drone, new_point) == "north-west"))) {
+			new_angle = 180;
 		}
-
-		// if the drone is about to cross the left boundary
-		if (new_point.longitude() <= MIN_LONGITUDE) {
-			new_point = Point.fromLngLat(drone.longitude() + lngDifference(90), drone.latitude() + latDifference(90));
+		// if the drone is about to cross top boundary and is flying north-east
+		if (new_point.latitude() >= MAX_LATITUDE && flightDirection(drone, new_point) == "north-east") {
+			new_angle = 0;
 		}
-
-		return new_point;
-
+		// if the drone is about to cross the left boundary and is flying south-west
+		if (new_point.longitude() <= MIN_LONGITUDE && flightDirection(drone, new_point) == "south-west") {
+			new_angle = 270;
+		}
+		// if the drone is about to cross the left boundary and is flying north-west
+		if (new_point.longitude() <= MIN_LONGITUDE && flightDirection(drone, new_point) == "north-west") {
+			new_angle = 90;
+		}
+		// if the drone is about to cross the bottom boundary and is flying south-east
+		if (new_point.latitude() <= MIN_LATITUDE && flightDirection(drone, new_point) == "south-east") {
+			new_angle = 0;
+		}
+		// if the drone is about to cross the bottom boundary and is flying south-east
+		if (new_point.latitude() <= MIN_LATITUDE && flightDirection(drone, new_point) == "south-west") {
+			new_angle = 180;
+		}
+		return new_angle;
 	}
 
 	// this method returns the number of moves made by the drone on its journey. It

@@ -71,6 +71,7 @@ public class Data {
 
 	public ArrayList<Polygon> getNoFly() throws IOException, InterruptedException {
 
+		// building an HttpRequest to fetch the no fly zones
 		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson"))
 				.build();
 		var no_fly_response = CLIENT.send(no_fly_request, BodyHandlers.ofString());

@@ -62,10 +62,24 @@ public class App
         
         path.buildPath();
            
+        var no_flys = data.getNoFly();
+        var no_fly_lines = new ArrayList<LineString>();
+        
+        
+        
+        for (int i = 0; i < no_flys.size(); i++) {
+        	no_fly_lines.add(no_flys.get(i).outer());
+        }
 
         System.out.println(path.getMoves());
  
         var feature_list = path.getFeatures();
+        
+//        for (int i = 0; i < no_fly_lines.size(); i++) {
+//        	feature_list.add(Feature.fromGeometry((Geometry)no_fly_lines.get(i)));
+//        }
+        
+        
         
         LineString boundary = LineString.fromLngLats(line_points);
         
@@ -81,7 +95,7 @@ public class App
         FeatureCollection collection = FeatureCollection.fromFeatures(feature_list);
         
         path.writeFlightPath(collection);
-        path.writeLogFile();
+        //path.writeLogFile();
         
     }
 // end of the main method

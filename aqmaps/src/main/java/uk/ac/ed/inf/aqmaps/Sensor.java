@@ -52,6 +52,8 @@ public class Sensor {
 	// returns the coordinates of a sensor using its What3Words location
 	public Point getCoordinates() throws IOException, InterruptedException {
 		String location = getLocation();
+		
+		// splitting the sensor location at the "."
 		String[] split_location = location.split("\\.");
 
 		var server_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + split_location[0] + "/"
