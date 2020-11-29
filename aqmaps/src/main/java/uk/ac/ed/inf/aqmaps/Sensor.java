@@ -5,7 +5,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.util.ArrayList;
+
 
 import com.google.gson.Gson;
 import com.mapbox.geojson.Feature;
@@ -50,7 +50,7 @@ public class Sensor {
 	}
 
 	// returns the coordinates of a sensor using its What3Words location
-	public Point getCoordinates() throws IOException, InterruptedException {
+	public Point getPoint() throws IOException, InterruptedException {
 		String location = getLocation();
 		
 		// splitting the sensor location at the "."
