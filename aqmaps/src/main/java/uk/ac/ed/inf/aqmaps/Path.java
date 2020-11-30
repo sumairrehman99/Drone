@@ -73,8 +73,13 @@ public class Path {
 		for (int i = 0; i < sensor_geometries.size(); i++) {
 			features_list.add(Feature.fromGeometry(sensor_geometries.get(i)));
 		}
-
-		// flying to the sensors
+		
+		///////////////////////////////////////////////////////////////////////////
+		/*
+		 * the algorithm
+		 */
+		///////////////////////////////////////////////////////////////////////////
+		
 		while (visited_sensors.size() < TOTAL_SENSORS || move_counter < MOVE_LIMIT) {
 
 			// the "target" sensor. This is the sensor the drone will fly to.
@@ -93,6 +98,8 @@ public class Path {
 
 				// return to the starting location. The drone is now in range to take a reading
 				// after having made a move.
+				
+				// calculating the angle to the starting point
 				double new_angle = nearestTen(findAngle(currentPosition(current_path), starting_point,
 						flightDirection(currentPosition(current_path), starting_point)));
 				angles.add((int) new_angle);
@@ -104,10 +111,7 @@ public class Path {
 
 				Feature sensor_feature = Feature.fromGeometry((Geometry) target_sensor); // converting it to a Feature
 
-				features_list.set(features_list.indexOf(sensor_feature), drawSensor(visited)); // replacing the visited
-																								// sensor
-																								// in features_list with
-																								// a marked version
+				features_list.set(features_list.indexOf(sensor_feature), drawSensor(visited)); // drawing the sensor
 				move_counter++;
 				continue;
 			}
@@ -118,27 +122,28 @@ public class Path {
 			double angle = nearestTen(findAngle(currentPosition(current_path), target_sensor,
 					flightDirection(currentPosition(current_path), target_sensor)));
 
+			// creating a new Point using the calculated angle
 			Point new_point = Point.fromLngLat(currentPosition(current_path).longitude() + lngDifference(angle),
 					currentPosition(current_path).latitude() + latDifference(angle));
 
 			/*
-			 * checking if the new calculated point lies within the confinement boundary if
-			 * not, alter the angle the drone will fly on
+			 * checking if the new point lies within the confinement boundary
+			 * if not, alter the angle the drone will fly on
 			 */
 			if (outOfBounds(new_point)) {
 				angle = checkBoundary(currentPosition(current_path), new_point);
 				new_point = Point.fromLngLat(currentPosition(current_path).longitude() + lngDifference(angle),
 						currentPosition(current_path).latitude() + latDifference(angle));
 			}
-			angles.add((int) angle);
-			current_path.add(new_point);
+			angles.add((int) angle);			// add the angle to angles list
+			current_path.add(new_point);		// adding to new Point to the list of Points
 
 			/*
 			 * if the drone is in range add it to visited sensors, mark it add the name to
 			 * sensor_names
 			 */
 			if (inRange(currentPosition(current_path), target_sensor)) {
-				visited_sensors.add(target_sensor);
+				visited_sensors.add(target_sensor);			
 				Sensor visited = names.get(target_sensor); /*
 																		 * getting the sensor that was just visited
 																		 */
@@ -146,10 +151,7 @@ public class Path {
 
 				Feature sensor_feature = Feature.fromGeometry((Geometry) target_sensor); // converting it to a Feature
 
-				features_list.set(features_list.indexOf(sensor_feature),
-						drawSensor(visited)); /*
-												 * replacing the sensor in features_list with a marked version
-												 */
+				features_list.set(features_list.indexOf(sensor_feature),drawSensor(visited)); // drawing the visited sensor
 				move_counter++;
 			} else {
 				sensor_names.add(null);
@@ -180,7 +182,7 @@ public class Path {
 			move_counter++;
 		}
 
-		// making the flight path of the drone from the Points in current_path
+		// making the flight path of the drone from the list of Points
 		LineString flight_path = LineString.fromLngLats(current_path);
 
 		features_list.add(Feature.fromGeometry((Geometry) flight_path));
