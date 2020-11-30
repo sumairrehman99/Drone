@@ -51,22 +51,22 @@ public class Path {
 
 		var list_of_sensors = flight_data.getSensors(); // the sensors that are to be read
 		var visited_sensors = new ArrayList<Point>(); // the sensors that are already visited
-		var coordinates = new ArrayList<Point>(); // the (lng,lat) coordinates of all the sensors
-		var sensor_coordinates = new HashMap<Point, Sensor>(); // stores the the coordinates and their corresponding Sensor
+		var sensor_points = new ArrayList<Point>(); // the (lng,lat) coordinates of all the sensors
+		var names = new HashMap<Point, Sensor>(); // stores the the coordinates and their corresponding Sensor
 		@SuppressWarnings("unused")
 		var no_flys = flight_data.getNoFly(); // Fetching the no fly zones from the web server
 		current_path.add(starting_point); // the starting position of the drone
 
 		for (int i = 0; i < list_of_sensors.size(); i++) {
-			sensor_coordinates.put(list_of_sensors.get(i).getPoint(), list_of_sensors.get(i));
+			names.put(list_of_sensors.get(i).getPoint(), list_of_sensors.get(i));
 		}
 
 		for (int i = 0; i < list_of_sensors.size(); i++) {
-			coordinates.add(list_of_sensors.get(i).getPoint());
+			sensor_points.add(list_of_sensors.get(i).getPoint());
 		}
 
-		for (int i = 0; i < coordinates.size(); i++) {
-			sensor_geometries.add((Geometry) coordinates.get(i));
+		for (int i = 0; i < sensor_points.size(); i++) {
+			sensor_geometries.add((Geometry) sensor_points.get(i));
 		}
 
 		// adding all the sensors to features_list
@@ -78,7 +78,7 @@ public class Path {
 		while (visited_sensors.size() < TOTAL_SENSORS || move_counter < MOVE_LIMIT) {
 
 			// the "target" sensor. This is the sensor the drone will fly to.
-			Point target_sensor = closestSensor(coordinates, currentPosition(current_path), visited_sensors);
+			Point target_sensor = closestSensor(sensor_points, currentPosition(current_path), visited_sensors);
 
 			// if the first sensor is in range of the starting position of the drone
 			if (inRange(target_sensor, currentPosition(current_path)) && move_counter == 0) {
@@ -98,7 +98,7 @@ public class Path {
 				angles.add((int) new_angle);
 				current_path.add(starting_point);
 				visited_sensors.add(target_sensor);
-				Sensor visited = sensor_coordinates.get(target_sensor); // the sensor that was just visited
+				Sensor visited = names.get(target_sensor); // the sensor that was just visited
 
 				sensor_names.add(visited.getLocation()); // getting the visited sensor's name
 
@@ -139,7 +139,7 @@ public class Path {
 			 */
 			if (inRange(currentPosition(current_path), target_sensor)) {
 				visited_sensors.add(target_sensor);
-				Sensor visited = sensor_coordinates.get(target_sensor); /*
+				Sensor visited = names.get(target_sensor); /*
 																		 * getting the sensor that was just visited
 																		 */
 				sensor_names.add(visited.getLocation()); // getting the visited sensor's name

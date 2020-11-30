@@ -38,7 +38,7 @@ public class App
 		FeatureCollection collection = FeatureCollection.fromFeatures(feature_list);
 
 		path.writeFlightPath(collection);
-		//path.writeLogFile();
+		path.writeLogFile();
 
 		System.out.println(path.getMoves());
 
