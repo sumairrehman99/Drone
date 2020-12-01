@@ -3,7 +3,6 @@ package uk.ac.ed.inf.aqmaps;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,13 +11,11 @@ import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
-import com.mapbox.geojson.Polygon;
-import com.mapbox.turf.TurfJoins;
-import com.mapbox.turf.TurfMisc;
-import com.mapbox.turf.models.LineIntersectsResult;
-import com.mapbox.turf.models.LineIntersectsResult.Builder;
+
 
 public class App {
+	
+	private static final HttpClient CLIENT = HttpClient.newHttpClient();	// one HttpClient is shared between classes
 
 	private static void setUp(String day, String month, String year, Point starting_point)
 			throws IOException, InterruptedException {
@@ -53,10 +50,14 @@ public class App {
 		Writer path_writer = new Writer(path);
 		
 		path_writer.writeReadings(collection);
-		//path_writer.writeFlightPath();
+		path_writer.writeFlightPath();
 
 		System.out.println(path.getMoves());
 
+	}
+	
+	public static HttpClient getClient() {
+		return CLIENT;
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {

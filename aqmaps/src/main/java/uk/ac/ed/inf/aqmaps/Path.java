@@ -9,7 +9,6 @@ import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
-import com.mapbox.geojson.Polygon;
 
 public class Path {
 
@@ -22,7 +21,7 @@ public class Path {
 
 	private static int move_counter = 0; // keeps track of the number of moves made by the drone
 	private ArrayList<Point> calculated_points = new ArrayList<>(MOVE_LIMIT); // stores the Points calculated by the algorithm
-																		 // that the drone will move on
+																		 	  // that the drone will move on
  	private static ArrayList<String> connected_sensors = new ArrayList<>(TOTAL_SENSORS); // the names of the visited sensors
 	private static ArrayList<Integer> angles = new ArrayList<>(MOVE_LIMIT); // stores the angles that the drone moves on
 	private Data flight_data;
@@ -40,7 +39,7 @@ public class Path {
 
 		var list_of_sensors = flight_data.getSensors(); // the sensors that are to be read
 		var visited_sensors = new ArrayList<Point>(); // the sensors that are already visited
-		var sensor_points = new ArrayList<Point>(); // the (lng,lat) coordinates of all the sensors
+		var sensor_points = new ArrayList<Point>(); // stores the Points representing the sensors
 		var point_to_sensor = new HashMap<Point, Sensor>(); // stores the the coordinates and their corresponding Sensor
 		@SuppressWarnings("unused")
 		var no_flys = flight_data.getNoFly(); // Fetching the no fly zones from the web server
@@ -133,9 +132,7 @@ public class Path {
 			 */
 			if (inRange(currentPosition(calculated_points), target_sensor)) {
 				visited_sensors.add(target_sensor);			
-				Sensor visited = point_to_sensor.get(target_sensor); /*
-																		 * getting the sensor that was just visited
-																		 */
+				Sensor visited = point_to_sensor.get(target_sensor); // getting the sensor that was just visited
 				connected_sensors.add(visited.getLocation()); // getting the visited sensor's name
 
 				Feature sensor_feature = Feature.fromGeometry((Geometry) target_sensor); // converting it to a Feature
@@ -217,7 +214,6 @@ public class Path {
 		return sensor_feature;
 	}
 
-	
 
 	// returns the Euclidean distance between two points
 	private static double getDistance(Point p1, Point p2) {
@@ -335,7 +331,7 @@ public class Path {
 
 		basic_angle = nearestTen(Math.toDegrees(Math.atan(lat_difference / lng_difference)));
 
-		// the angle is calculated using the 360 degree ASTC graph
+		// the angle is calculated depending on the direction of the target w.r.t the drone
 		switch (direction) {
 		case "north-east":
 			angle = basic_angle;

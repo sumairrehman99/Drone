@@ -2,7 +2,6 @@ package uk.ac.ed.inf.aqmaps;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 
@@ -12,7 +11,6 @@ import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Point;
 
 public class Sensor {
-	private static final HttpClient CLIENT = HttpClient.newHttpClient();
 	private String location;
 	private String reading;
 	private double battery;
@@ -49,7 +47,7 @@ public class Sensor {
 		}
 	}
 
-	// returns the coordinates of a sensor using its What3Words location
+	// returns a Point using the sensor's What3Words address
 	public Point getPoint() throws IOException, InterruptedException {
 		String location = getLocation();
 		
@@ -58,7 +56,7 @@ public class Sensor {
 
 		var server_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + split_location[0] + "/"
 				+ split_location[1] + "/" + split_location[2] + "/details.json")).build();
-		var server_response = CLIENT.send(server_request, BodyHandlers.ofString());
+		var server_response = App.getClient().send(server_request, BodyHandlers.ofString());
 
 		var words = new Gson().fromJson(server_response.body(), Words.class);
 
@@ -67,6 +65,7 @@ public class Sensor {
 
 	}
 
+	// this method draws a sensor according to the reading and battery
 	public static Feature draw(double reading, double battery, String location, Feature sensor_feature) {
 
 		if (battery < 10) {
