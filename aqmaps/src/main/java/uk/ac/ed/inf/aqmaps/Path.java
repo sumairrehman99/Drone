@@ -40,7 +40,7 @@ public class Path {
 		var list_of_sensors = flight_data.getSensors(); // the sensors that are to be read
 		var visited_sensors = new ArrayList<Point>(); // the sensors that are already visited
 		var sensor_points = new ArrayList<Point>(); // stores the Points representing the sensors
-		var point_to_sensor = new HashMap<Point, Sensor>(); // stores the the coordinates and their corresponding Sensor
+		var point_to_sensor = new HashMap<Point, Sensor>(); // stores the Points and their corresponding Sensor
 		@SuppressWarnings("unused")
 		var no_flys = flight_data.getNoFly(); // Fetching the no fly zones from the web server
 		calculated_points.add(starting_point); // the starting position of the drone
@@ -75,11 +75,17 @@ public class Path {
 
 			// if the first sensor is in range of the starting position of the drone
 			if (inRange(target_sensor, currentPosition(calculated_points)) && move_counter == 0) {
-
-				// move to a arbitrary location 90 degrees north. This is counted as a move.
-				angles.add(90);
-				Point new_point = Point.fromLngLat(starting_point.longitude() + lngDifference(90),
-						starting_point.latitude() + latDifference(90));
+				double angle = 90; 	// completely arbitrary angle
+				// move to a arbitrary location inside the boundary. This is counted as a move.
+				Point new_point = Point.fromLngLat(starting_point.longitude() + lngDifference(angle),
+						starting_point.latitude() + latDifference(angle));
+				// check if new point is inside the confinement boundary
+				if (outOfBounds(new_point)) {
+					 angle = checkBoundary(starting_point, new_point);
+					new_point = Point.fromLngLat(starting_point.longitude() + lngDifference(angle),
+							starting_point.latitude() + latDifference(angle));
+				}
+				angles.add((int) angle);
 				calculated_points.add(new_point);
 				connected_sensors.add(null);
 				move_counter++;
@@ -150,13 +156,25 @@ public class Path {
 				break;
 			}
 		}
-
-		// returning to the starting position
+		
+		//////////////////////////////////////////////////
+		/*
+		 * returning to the starting position
+		 */
+		//////////////////////////////////////////////////
+		
 		while (move_counter < MOVE_LIMIT) {
 			double angle = findAngle(currentPosition(calculated_points), starting_point,
 					flightDirection(currentPosition(calculated_points), starting_point));
 			Point new_point = Point.fromLngLat(currentPosition(calculated_points).longitude() + lngDifference(angle),
 					currentPosition(calculated_points).latitude() + latDifference(angle));
+			
+			// check if new point is inside the confinement boundary
+			if (outOfBounds(new_point)) {
+				angle = checkBoundary(currentPosition(calculated_points), new_point);
+				new_point = Point.fromLngLat(currentPosition(calculated_points).longitude() + lngDifference(angle),
+						currentPosition(calculated_points).latitude() + latDifference(angle));
+			}
 
 			// if the drone is close enough to the starting position, stop
 			if (getDistance(starting_point, currentPosition(calculated_points)) < 0.0002) {
@@ -293,7 +311,7 @@ public class Path {
 
 	// this method return the direction the drone is flying
 	// (north-east, south-west, ..., etc.)
-	private String flightDirection(Point from, Point to) {
+	public String flightDirection(Point from, Point to) {
 		String direction = "";
 		if (to.latitude() > from.latitude() && to.longitude() > from.longitude()) {
 			direction = "north-east";

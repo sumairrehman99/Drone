@@ -51,6 +51,7 @@ public class App {
 		
 		path_writer.writeReadings(collection);
 		path_writer.writeFlightPath();
+		
 
 		System.out.println(path.getMoves());
 
