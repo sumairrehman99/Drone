@@ -24,7 +24,7 @@ public class Data {
 	private String month;
 	private String year;
 
-	public Data(String day, String month, String year) throws IOException, InterruptedException {
+	public Data(String day, String month, String year) throws IOException, InterruptedException  {
 		this.day = day;
 		this.month = month;
 		this.year = year;
@@ -33,12 +33,14 @@ public class Data {
 		var data_request = HttpRequest.newBuilder()
 				.uri(URI.create("http://localhost/maps/" + year + "/" + month + "/" + day + "/air-quality-data.json"))
 				.build();
-
+		
 		var data_response = App.getClient().send(data_request, BodyHandlers.ofString());
-
+		
+		
 		Type mapsType = new TypeToken<ArrayList<Maps>>() {}.getType();
 
 		data_list = new Gson().fromJson(data_response.body(), mapsType);
+		
 
 	}
 

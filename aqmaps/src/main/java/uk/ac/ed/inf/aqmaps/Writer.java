@@ -21,13 +21,9 @@ public class Writer {
 
 			
 			Data data = path.getFlightData();
-			
-			String day = data.getDay();
-			String month = data.getMonth();
-			String year = data.getYear();
 
 			try {
-				FileWriter fw = new FileWriter("readings-" + day + "-" + month + "-" + year + ".geojson");
+				FileWriter fw = new FileWriter("readings-" + data.getDay() + "-" + data.getMonth() + "-" + data.getYear() + ".geojson");
 				PrintWriter pw = new PrintWriter(fw);
 
 				// converting the FeatureCollection to a JSON file
@@ -46,14 +42,11 @@ public class Writer {
 			
 			Data data = path.getFlightData();
 			var angles = path.getAngles();
-			String day = data.getDay();
-			String month = data.getMonth();
-			String year = data.getYear();
 			var calculated_points = path.getCalculatedPoints();
 			var sensor_names = path.getConnectedSensors();
 
 			try {
-				FileWriter fw = new FileWriter("flightpath-" + day + "-" + month + "-" + year + ".txt");
+				FileWriter fw = new FileWriter("flightpath-" + data.getDay() + "-" + data.getMonth() + "-" + data.getYear() + ".txt");
 				PrintWriter pw = new PrintWriter(fw);
 
 				for (int i = 1; i <= path.getMoves(); i++) {
