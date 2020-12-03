@@ -71,7 +71,8 @@ public class Path {
 		///////////////////////////////////////////////////////////////////////////
 		
 		while (visited_sensors.size() < TOTAL_SENSORS || move_counter < MOVE_LIMIT) {
-
+			// This algorithm treats sensors as Points on the map.
+			
 			// the "target" sensor. This is the sensor the drone will fly to.
 			Point target_sensor = closestSensor(sensor_points, currentPosition(calculated_points), visited_sensors);
 
@@ -131,7 +132,7 @@ public class Path {
 				new_point = Point.fromLngLat(currentPosition(calculated_points).longitude() + lngDifference(angle),
 						currentPosition(calculated_points).latitude() + latDifference(angle));
 			}
-			angles.add((int) angle);			// add the angle to angles list
+			angles.add((int) angle);				// add the angle to angles list
 			calculated_points.add(new_point);		// adding to new Point to the list of Points
 
 			/*
@@ -216,6 +217,7 @@ public class Path {
 		return connected_sensors;
 	}
 	
+	// returns the number of moves made by the drone on its journey
 	public int getMoves() {
 		return move_counter;
 	}

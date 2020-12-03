@@ -14,7 +14,7 @@ public class Sensor {
 	private String location;
 	private String reading;
 	private double battery;
-
+	
 	public Sensor(String location, String reading, double battery) {
 		this.location = location;
 		this.reading = reading;
@@ -54,7 +54,7 @@ public class Sensor {
 		// splitting the sensor location at the "."
 		String[] split_location = location.split("\\.");
 
-		var server_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/words/" + split_location[0] + "/"
+		var server_request = HttpRequest.newBuilder().uri(URI.create("http://localhost:" + Data.getPort() + "/words/" + split_location[0] + "/"
 				+ split_location[1] + "/" + split_location[2] + "/details.json")).build();
 		var server_response = App.getClient().send(server_request, BodyHandlers.ofString());
 

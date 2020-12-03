@@ -23,15 +23,17 @@ public class Data {
 	private String day;
 	private String month;
 	private String year;
+	private static String port;
 
-	public Data(String day, String month, String year) throws IOException, InterruptedException  {
+	public Data(String day, String month, String year, String port) throws IOException, InterruptedException  {
 		this.day = day;
 		this.month = month;
 		this.year = year;
+		Data.port = port;
 
 		// Building a request to get the data for the given day, month and year
 		var data_request = HttpRequest.newBuilder()
-				.uri(URI.create("http://localhost/maps/" + year + "/" + month + "/" + day + "/air-quality-data.json"))
+				.uri(URI.create("http://localhost:" + port + "/maps/" + year + "/" + month + "/" + day + "/air-quality-data.json"))
 				.build();
 		
 		var data_response = App.getClient().send(data_request, BodyHandlers.ofString());
@@ -56,6 +58,10 @@ public class Data {
 		return year;
 	}
 
+	public static String getPort() {
+		return port;
+	}
+	
 	
 	// returns the list of sensors to be visited on the given day
 	public ArrayList<Sensor> getSensors() {
@@ -75,7 +81,7 @@ public class Data {
 		ArrayList<Polygon> no_fly_zones = new ArrayList<>(4); // this list stores the no_fly zones
 		
 		// building an HttpRequest to fetch the no fly zones
-		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost/buildings/no-fly-zones.geojson"))
+		var no_fly_request = HttpRequest.newBuilder().uri(URI.create("http://localhost:" + port + "/buildings/no-fly-zones.geojson"))
 				.build();
 		var no_fly_response = App.getClient().send(no_fly_request, BodyHandlers.ofString());
 
